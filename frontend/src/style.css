@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-sidebar: #1a1a2e;
+}
+
+/* —— 全局重置 —— */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* —— 修复 Element Plus el-aside 不响应 Tailwind bg 的问题 —— */
+.el-aside {
+  background-color: #1a1a2e !important;
+}
+
+/* —— el-menu 暗色主题增强 —— */
+.el-menu--dark,
+.el-menu {
+  border-right: none !important;
+}
+
+/* —— 主内容区 —— */
+.el-main {
+  --el-main-padding: 20px;
+  background: #f0f2f5 !important;
+}
+
+/* —— 卡片增强 —— */
+.el-card {
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #ebeef5 !important;
+}
+
+.el-card__header {
+  padding: 14px 20px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  font-weight: 600;
+}
+
+/* —— 表格增强 —— */
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  background-color: #fafafa !important;
+  color: #606266;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.el-table .el-table__row:hover > td {
+  background-color: #f5f7fa !important;
+}
+
+/* —— 按钮间距 —— */
+.el-button + .el-button {
+  margin-left: 0;
+}
+
+/* —— 分页 —— */
+.el-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* —— 对话框 —— */
+.el-dialog {
+  border-radius: 12px !important;
+}
+
+.el-dialog__header {
+  padding: 20px 24px 16px !important;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* —— 标签增强 —— */
+.el-tag {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* —— 输入框 —— */
+.el-input__wrapper {
+  border-radius: 6px !important;
+}
+
+/* —— 统计卡片 —— */
+.stat-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card.green {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+}
+
+.stat-card.orange {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+}
+
+.stat-card.blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.stat-card .stat-label {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 4px;
+}
+
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-card .stat-sub {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+/* —— 页面标题栏 —— */
+.page-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* —— 数据类型颜色标签 —— */
+.type-tag.attendance { background: #e6f7ff; color: #1890ff; border-color: #91d5ff; }
+.type-tag.sales { background: #f6ffed; color: #52c41a; border-color: #b7eb8f; }
+.type-tag.customer { background: #fff7e6; color: #fa8c16; border-color: #ffd591; }
+.type-tag.operation { background: #f9f0ff; color: #722ed1; border-color: #d3adf7; }
+
+/* —— 动画 —— */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* —— 滚动条美化 —— */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* —— 空状态增强 —— */
+.el-empty__description {
+  color: #909399 !important;
+  font-size: 14px !important;
+}
+
+/* —— 响应式 —— */
+@media (max-width: 768px) {
+  .el-aside {
+    width: 60px !important;
+  }
+  .stat-card .stat-value {
+    font-size: 20px;
+  }
+}
