@@ -1,0 +1,164 @@
+[
+  {
+    "id": 1,
+    "question": "销售部11月的异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["异常率", "销售"],
+    "category": "data_query"
+  },
+  {
+    "id": 2,
+    "question": "郑十为什么被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": ["get_anomaly_details"],
+    "reference_keywords": ["郑十", "异常"],
+    "category": "hybrid"
+  },
+  {
+    "id": 3,
+    "question": "加班超过多少小时算异常？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": ["加班", "异常", "考勤"],
+    "reference_keywords": ["小时"],
+    "category": "doc_query"
+  },
+  {
+    "id": 4,
+    "question": "技术部有多少条异常记录？",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_anomaly_details"],
+    "reference_keywords": ["技术部", "异常"],
+    "category": "data_query"
+  },
+  {
+    "id": 5,
+    "question": "考勤制度对迟到的规定是什么？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": ["迟到", "考勤"],
+    "reference_keywords": ["迟到", "规定"],
+    "category": "doc_query"
+  },
+  {
+    "id": 6,
+    "question": "运营部完成率最低的指标是什么？",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["运营", "完成率"],
+    "category": "data_query"
+  },
+  {
+    "id": 7,
+    "question": "请假流程需要提前几天申请？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": ["请假", "申请"],
+    "reference_keywords": ["天", "提前"],
+    "category": "doc_query"
+  },
+  {
+    "id": 8,
+    "question": "所有部门的异常率排名",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["部门", "排名", "异常率"],
+    "category": "data_query"
+  },
+  {
+    "id": 9,
+    "question": "客户等级怎么划分的？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": ["客户", "等级"],
+    "reference_keywords": ["等级", "划分"],
+    "category": "doc_query"
+  },
+  {
+    "id": 10,
+    "question": "张三这个月的销售业绩怎么样？",
+    "expected_intent": "data_query",
+    "expected_tools": ["query_cleaned_records"],
+    "reference_keywords": ["张三", "销售", "业绩"],
+    "category": "data_query"
+  },
+  {
+    "id": 11,
+    "question": "合同金额超过10万的客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": ["query_cleaned_records"],
+    "reference_keywords": ["合同", "客户", "10万"],
+    "category": "data_query"
+  },
+  {
+    "id": 12,
+    "question": "KPI考核标准中运营指标的权重是多少？",
+    "expected_intent": "hybrid",
+    "expected_doc_keywords": ["KPI", "考核", "运营"],
+    "expected_tools": [],
+    "reference_keywords": ["权重", "KPI"],
+    "category": "hybrid"
+  },
+  {
+    "id": 13,
+    "question": "销售部合同金额为什么被判定为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": ["get_anomaly_details"],
+    "reference_keywords": ["销售", "合同", "异常"],
+    "category": "hybrid"
+  },
+  {
+    "id": 14,
+    "question": "技术部和销售部的异常率对比",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["技术部", "销售部", "对比", "异常率"],
+    "category": "data_query"
+  },
+  {
+    "id": 15,
+    "question": "员工离职需要办理什么手续？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": ["离职", "手续"],
+    "reference_keywords": ["手续", "离职"],
+    "category": "doc_query"
+  },
+  {
+    "id": 16,
+    "question": "最近一个月哪个部门数据质量最好？",
+    "expected_intent": "data_query",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["质量", "部门", "最好"],
+    "category": "data_query"
+  },
+  {
+    "id": 17,
+    "question": "客户跟进日期超过30天没更新的有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": ["query_cleaned_records"],
+    "reference_keywords": ["客户", "跟进", "30天"],
+    "category": "data_query"
+  },
+  {
+    "id": 18,
+    "question": "销售部为什么异常率比其他部门高？",
+    "expected_intent": "hybrid",
+    "expected_tools": ["get_summary_stats"],
+    "reference_keywords": ["销售部", "异常率", "对比"],
+    "category": "hybrid"
+  },
+  {
+    "id": 19,
+    "question": "目标值没达到80%算不算异常？",
+    "expected_intent": "hybrid",
+    "expected_doc_keywords": ["目标值", "异常", "考核"],
+    "expected_tools": [],
+    "reference_keywords": ["80%", "目标", "异常"],
+    "category": "hybrid"
+  },
+  {
+    "id": 20,
+    "question": "hello world",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case"
+  }
+]

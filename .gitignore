@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# 环境变量
+.env
+
+# 数据文件
+data/uploads/*
+data/exports/*
+!data/uploads/.gitkeep
+!data/exports/.gitkeep
+
+# 日志
+logs/*.log
+stderr.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 面试资料（不公开）
+INTERVIEW_GUIDE.md
+
+# 评估报告（历史记录，体积大）
+eval_report_*.json
+
+# 临时文件
+Untitled
