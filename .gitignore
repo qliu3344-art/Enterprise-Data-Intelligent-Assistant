@@ -41,3 +41,4 @@ eval_report_*.json
 
 # 临时文件
 Untitled
+data/chroma_db/

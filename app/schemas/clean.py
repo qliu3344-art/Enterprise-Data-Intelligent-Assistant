@@ -47,6 +47,8 @@ class AnomalyRecordResponse(BaseModel):
     quality_score: float
     is_anomaly: bool
     anomaly_reason: Optional[str] = None
+    anomaly_status: str = "normal"
+    pending_check_fields: Optional[dict[str, Any]] = None
     created_at: datetime
 
     class Config:

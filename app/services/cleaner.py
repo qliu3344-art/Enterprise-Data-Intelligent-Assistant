@@ -27,16 +27,17 @@ ANOMALY_PROMPT = """你是一个业务数据分析师。请判断以下数据中
 
 ## 要求
 1. 逐条判断每个候选值是否为业务异常
-2. reason 必须是一句简短的人话，直接说结论，禁止写计算过程、数学公式、统计术语
+2. reason 只写一句业务结论，面向业务人员，严禁出现任何数字、公式、统计术语（Q3/IQR/均值/标准差/σ等）
 3. 输出 JSON：{{"anomalies": [{{"record_index": 0, "field": "order_amount", "value": 99999, "is_anomaly": true, "reason": "超出正常范围，疑似录入错误"}}]}}
 4. 只输出 JSON
 
-## reason 示例（必须照这个风格写）
+## reason 示例（必须照这个风格写，不要出现任何数字）
 ✅ 好的 reason："加班时长偏高，建议核实是否为项目冲刺期"
 ✅ 好的 reason："请假天数超出正常范围，疑似数据录入错误"
 ✅ 好的 reason："与历史同期相比明显偏高，需人工复核"
-❌ 坏的 reason："超过Q3+1.5×IQR且均值+2σ..."（禁止写公式）
-❌ 坏的 reason："虽未超历史最大值但IQR法判定..."（禁止纠结过程）
+❌ 坏的 reason："超过Q3+1.5×IQR且均值+2σ..."（写了公式 → 直接判错）
+❌ 坏的 reason："虽未超历史最大值但IQR法判定..."（写了IQR → 直接判错）
+❌ 坏的 reason："加班42.5小时超过均值11.12"（写了数字 → 直接判错）
 """
 
 
@@ -146,7 +147,7 @@ class CleaningPipeline:
         prompt = ANOMALY_PROMPT.format(
             data_type=context.get("data_type", "未知") if context else "未知",
             date_range=context.get("date_range", "未知") if context else "未知",
-            historical_stats=json.dumps(historical_stats, ensure_ascii=False),
+            historical_stats=historical_stats,
             data_summary=data_summary,
         )
 
@@ -164,9 +165,30 @@ class CleaningPipeline:
 
             result = json.loads(content)
         except (json.JSONDecodeError, Exception) as e:
-            logger.error(f"LLM 异常判定失败: {e}")
-            self._log_step("anomaly_detect", len(statistical_candidates), 0, {"error": str(e)})
-            return []
+            logger.error(f"LLM 异常判定失败，降级为待审核: {e}")
+            pending = [
+                {
+                    "record_index": c["record_index"],
+                    "field": c["field"],
+                    "value": c["value"],
+                    "is_anomaly": False,
+                    "reason": f"LLM异常降级，待审核: {c['field']} 当前值 {c['value']} 超出 IQR 统计范围",
+                    "pending_review": True,
+                }
+                for c in statistical_candidates
+            ]
+            self._log_step(
+                "anomaly_detect",
+                len(statistical_candidates),
+                len(pending),
+                {
+                    "llm_called": False,
+                    "degraded": True,
+                    "pending_review_count": len(pending),
+                    "error": str(e),
+                },
+            )
+            return pending
 
         anomalies = result.get("anomalies", [])
         confirmed = [a for a in anomalies if a.get("is_anomaly")]
@@ -209,18 +231,23 @@ class CleaningPipeline:
         # 最多送 LLM_MAX_ANOMALY_CANDIDATES 条
         return candidates[: settings.LLM_MAX_ANOMALY_CANDIDATES]
 
-    def _compute_basic_stats(self, df: pd.DataFrame) -> dict:
-        """计算数值列的基本统计量，供 LLM 参考。"""
-        stats = {}
+    def _compute_basic_stats(self, df: pd.DataFrame) -> str:
+        """计算数值列的基本统计量，转为自然语言供 LLM 参考。
+
+        刻意不用 JSON 数值格式——避免 LLM 看到数字后忍不住做数学计算
+        并写到 reason 里。用纯中文描述，"大约"模糊化，不暴露精确值。
+        """
+        lines = []
         for col in df.select_dtypes(include=["float64", "int64"]).columns:
-            stats[col] = {
-                "mean": round(float(df[col].mean()), 2),
-                "median": round(float(df[col].median()), 2),
-                "std": round(float(df[col].std()), 2),
-                "min": round(float(df[col].min()), 2),
-                "max": round(float(df[col].max()), 2),
-            }
-        return stats
+            mean_val = round(float(df[col].mean()), 1)
+            median_val = round(float(df[col].median()), 1)
+            min_val = round(float(df[col].min()), 1)
+            max_val = round(float(df[col].max()), 1)
+            lines.append(
+                f"字段「{col}」：大部分值在 {min_val} 到 {max_val} 之间，"
+                f"中位数约 {median_val}，平均值约 {mean_val}"
+            )
+        return "\n".join(lines)
 
     def _summarize_candidates(self, candidates: list[dict]) -> str:
         """将候选异常转为 LLM 可读的文本（只传值和字段，不传统计细节）。"""
@@ -234,18 +261,39 @@ class CleaningPipeline:
     def _mark_anomalies(
         self, df: pd.DataFrame, anomalies: list[dict]
     ) -> pd.DataFrame:
-        """在 DataFrame 上标注异常标记和原因。"""
+        """在 DataFrame 上标注异常标记和原因。
+
+        处理三种状态：
+          - is_anomaly=True → confirmed（LLM 确认的异常）
+          - pending_review=True → pending_review（LLM 降级，待后续复核）
+          - 其他 → normal（正常数据）
+        """
         if "is_anomaly" not in df.columns:
             df["is_anomaly"] = False
         if "anomaly_reason" not in df.columns:
             df["anomaly_reason"] = ""
+        if "anomaly_status" not in df.columns:
+            df["anomaly_status"] = "normal"
+        if "pending_check_fields" not in df.columns:
+            df["pending_check_fields"] = None
 
         for a in anomalies:
+            idx = a["record_index"]
+            if not (0 <= idx < len(df)):
+                continue
+
             if a.get("is_anomaly"):
-                idx = a["record_index"]
-                if 0 <= idx < len(df):
-                    df.at[idx, "is_anomaly"] = True
-                    df.at[idx, "anomaly_reason"] = a.get("reason", "")
+                df.at[idx, "is_anomaly"] = True
+                df.at[idx, "anomaly_reason"] = a.get("reason", "")
+                df.at[idx, "anomaly_status"] = "confirmed"
+            elif a.get("pending_review"):
+                df.at[idx, "is_anomaly"] = False
+                df.at[idx, "anomaly_reason"] = a.get("reason", "")
+                df.at[idx, "anomaly_status"] = "pending_review"
+                df.at[idx, "pending_check_fields"] = {
+                    "field": a.get("field"),
+                    "value": a.get("value"),
+                }
         return df
 
     # —— 日志 ——

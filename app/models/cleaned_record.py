@@ -31,6 +31,15 @@ class CleanedRecord(Base):
     quality_score = Column(Float, default=1.0, comment="数据质量分(0-1)")
     is_anomaly = Column(Boolean, default=False, comment="是否被标记为异常")
     anomaly_reason = Column(Text, comment="异常原因")
+    anomaly_status = Column(
+        String(30),
+        default="normal",
+        comment="异常判定状态: normal/pending_review/confirmed",
+    )
+    pending_check_fields = Column(
+        JSON,
+        comment="待审核字段（LLM降级时保留的IQR候选信息，供后续复查）",
+    )
 
     created_at = Column(DateTime, default=datetime.now)
 
