@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 
 import pandas as pd
+from dashscope import Generation
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -73,7 +74,9 @@ def trigger_clean(batch_id: str, db: Session = Depends(get_db)):
             business_data=business_cols,
             quality_score=1.0,
             is_anomaly=bool(row.get("is_anomaly", False)),
-            anomaly_reason=str(row.get("anomaly_reason", "")) if row.get("anomaly_reason") else None,
+            anomaly_reason=_safe_str(row.get("anomaly_reason")),
+            anomaly_status=_safe_str(row.get("anomaly_status", "normal")),
+            pending_check_fields=_safe_json(row.get("pending_check_fields")),
         )
         db.add(record)
         db.flush()
@@ -99,6 +102,11 @@ def trigger_clean(batch_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     anomaly_count = int(df_cleaned["is_anomaly"].sum()) if "is_anomaly" in df_cleaned.columns else 0
+    pending_count = (
+        int((df_cleaned["anomaly_status"] == "pending_review").sum())
+        if "anomaly_status" in df_cleaned.columns
+        else 0
+    )
 
     return {
         "code": 200,
@@ -109,6 +117,7 @@ def trigger_clean(batch_id: str, db: Session = Depends(get_db)):
             "total_input": len(raw_records),
             "total_output": len(cleaned_ids),
             "anomaly_count": anomaly_count,
+            "pending_review_count": pending_count,
             "steps": pipeline.logs,
             "duration_seconds": None,
         },
@@ -151,10 +160,27 @@ def list_anomalies(
     page: int = 1,
     page_size: int = 20,
     data_type: str = "",
+    anomaly_status: str = "",
     db: Session = Depends(get_db),
 ):
-    """查询已标记为异常的记录。"""
-    query = db.query(CleanedRecord).filter(CleanedRecord.is_anomaly == True)
+    """查询异常/待审核记录。
+
+    - anomaly_status 为空时只查已确认异常（is_anomaly=True），兼容旧版
+    - anomaly_status=pending_review 时查待审核记录
+    - anomaly_status=all 时查所有异常+待审核
+    """
+    if anomaly_status == "pending_review":
+        query = db.query(CleanedRecord).filter(
+            CleanedRecord.anomaly_status == "pending_review"
+        )
+    elif anomaly_status == "all":
+        query = db.query(CleanedRecord).filter(
+            (CleanedRecord.is_anomaly == True)
+            | (CleanedRecord.anomaly_status == "pending_review")
+        )
+    else:
+        query = db.query(CleanedRecord).filter(CleanedRecord.is_anomaly == True)
+
     if data_type:
         query = query.filter(CleanedRecord.data_type == data_type)
 
@@ -184,6 +210,8 @@ def list_anomalies(
                     "quality_score": r.quality_score,
                     "is_anomaly": r.is_anomaly,
                     "anomaly_reason": r.anomaly_reason,
+                    "anomaly_status": r.anomaly_status or "normal",
+                    "pending_check_fields": r.pending_check_fields,
                     "created_at": r.created_at.isoformat() if r.created_at else None,
                 }
                 for r in items
@@ -207,9 +235,115 @@ def update_anomaly(
     record.is_anomaly = body.is_anomaly
     if body.anomaly_reason is not None:
         record.anomaly_reason = body.anomaly_reason
+    record.anomaly_status = "confirmed" if body.is_anomaly else "normal"
+    record.pending_check_fields = None
 
     db.commit()
     return {"code": 200, "message": "异常标记已更新", "data": None}
+
+
+@router.post("/pending/retry", response_model=dict)
+def retry_pending_llm(db: Session = Depends(get_db)):
+    """对 pending_review 状态的记录重试 LLM 异常判定。
+
+    遍历所有待审核记录，重新调用 LLM 做业务判断。
+    LLM 恢复后调用此接口即可自动回填判定结果。
+    """
+    from app.config import settings
+    from app.services.cleaner import ANOMALY_PROMPT
+
+    pending = (
+        db.query(CleanedRecord)
+        .filter(CleanedRecord.anomaly_status == "pending_review")
+        .all()
+    )
+
+    if not pending:
+        return {
+            "code": 200,
+            "message": "ok",
+            "data": {"total_pending": 0, "resolved": 0, "confirmed_anomaly": 0, "failed": 0},
+        }
+
+    logger.info(f"重试 LLM 判定，共 {len(pending)} 条待审核记录")
+
+    resolved = 0
+    confirmed_anomaly = 0
+    failed = 0
+
+    for record in pending:
+        if not record.pending_check_fields:
+            record.anomaly_status = "normal"
+            record.pending_check_fields = None
+            resolved += 1
+            continue
+
+        field = record.pending_check_fields.get("field", "未知字段")
+        value = record.pending_check_fields.get("value", "未知值")
+        data_type = record.data_type or "未知"
+
+        data_summary = (
+            f"第0行, 字段={field}, 当前值={value}\n"
+            f"所属部门: {record.department or '未知'}\n"
+            f"员工: {record.employee_name or '未知'}"
+        )
+
+        prompt = ANOMALY_PROMPT.format(
+            data_type=data_type,
+            date_range=str(record.record_date) if record.record_date else "未知",
+            historical_stats=json.dumps(
+                {"field": field, "value": value, "department": record.department},
+                ensure_ascii=False,
+            ),
+            data_summary=data_summary,
+        )
+
+        try:
+            resp = Generation.call(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                result_format="message",
+                temperature=0.1,
+            )
+
+            content = resp.output.choices[0].message.content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+            result = json.loads(content)
+            anomalies = result.get("anomalies", [])
+            is_real_anomaly = any(a.get("is_anomaly") for a in anomalies)
+
+            if is_real_anomaly:
+                matched = [a for a in anomalies if a.get("is_anomaly")]
+                reason = matched[0].get("reason", "LLM 复核确认异常")
+                record.is_anomaly = True
+                record.anomaly_reason = reason
+                record.anomaly_status = "confirmed"
+                confirmed_anomaly += 1
+            else:
+                record.anomaly_reason = "LLM 复核: 非异常"
+                record.anomaly_status = "normal"
+
+            record.pending_check_fields = None
+            resolved += 1
+
+        except Exception as e:
+            logger.error(f"重试 LLM 判定失败 (record_id={record.id}): {e}")
+            failed += 1
+
+    db.commit()
+
+    return {
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "total_pending": len(pending),
+            "resolved": resolved,
+            "confirmed_anomaly": confirmed_anomaly,
+            "failed": failed,
+        },
+    }
 
 
 # —— 辅助函数 ——
@@ -258,7 +392,31 @@ def _extract_business_columns(row: pd.Series, mapping_record) -> dict:
     return result
 
 
-def _safe_date(val) -> datetime | None:
+def _safe_str(val) -> str | None:
+    """安全转字符串，处理 NaN。"""
+    if val is None:
+        return None
+    try:
+        if pd.isna(val):
+            return None
+    except Exception:
+        pass
+    s = str(val)
+    return s if s else None
+
+
+def _safe_json(val) -> dict | None:
+    """安全提取 JSON 字段，处理 NaN 和空值。"""
+    if val is None:
+        return None
+    try:
+        if pd.isna(val):
+            return None
+    except Exception:
+        pass
+    if isinstance(val, dict):
+        return val
+    return None
     """安全转换日期。"""
     if val is None or pd.isna(val):
         return None

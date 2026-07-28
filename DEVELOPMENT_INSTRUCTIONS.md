@@ -104,7 +104,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 | 多源数据采集 | 4 类数据源自动化接入 | 统一 Connector 抽象层（策略模式） |
 | 非结构化 PDF 提取 | LLM 提取 PDF 报表信息 | 通义千问语义理解 |
 | 异构表头语义对齐 | 跨部门字段自动映射 | LLM 语义匹配替代人工配置 |
-| 数据清洗 Pipeline | 去重→填充→异常判异 | IQR 统计初筛 + LLM 终判两阶段 |
+| 数据清洗 Pipeline | 去重→填充→异常判异 | IQR 统计初筛 + LLM 终判两阶段，LLM 失败降级 pending_review |
 | 自然语言智能查询 | 中文提问查数据、查文档 | LangChain Agent + RAG 混合检索 |
 | RAG 制度文档问答 | 企业内部制度文档检索 | BGE 向量化 + BM25 混合检索 + 引用溯源 |
 
@@ -198,7 +198,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 │   │   ├── __init__.py
 │   │   ├── aligner.py             # 异构表头语义对齐（LLM）
 │   │   ├── analyzer.py            # 业务分析服务
-│   │   ├── cleaner.py             # 数据清洗 Pipeline（IQR + LLM）
+│   │   ├── cleaner.py             # 数据清洗 Pipeline（IQR + LLM + pending_review 降级）
 │   │   ├── collector.py           # 采集编排服务
 │   │   ├── intent_router.py       # LLM 意图路由（data/doc/hybrid）
 │   │   ├── query_agent.py         # LangChain ReAct Agent + Checkpointer
@@ -303,7 +303,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 
 1. **去重** — 自动识别主键列组合（员工ID+日期等），`drop_duplicates`
 2. **填充** — 数值列中位数填充，分类列众数填充，日期列不填充
-3. **异常判异** — IQR 统计初筛（最多 50 条候选）→ LLM 终判（结合业务上下文）
+3. **异常判异** — IQR 统计初筛（最多 50 条候选）→ LLM 终判（结合业务上下文）。LLM 调用失败时自动降级，候选数据标记为 `pending_review` 待人工审核，不丢弃
 
 ### 5.4 Connector 策略模式（services/connectors/）
 
@@ -397,6 +397,8 @@ CREATE TABLE cleaned_records (
     quality_score FLOAT DEFAULT 1.0,
     is_anomaly BOOLEAN DEFAULT FALSE,
     anomaly_reason TEXT,
+    anomaly_status VARCHAR(30) DEFAULT 'normal' COMMENT '异常判定状态: normal/pending_review/confirmed',
+    pending_check_fields JSON COMMENT '待审核字段（LLM降级时保留的IQR候选信息）',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_id) REFERENCES data_sources(id) ON DELETE CASCADE,
     INDEX idx_batch_id (batch_id),
@@ -519,7 +521,7 @@ CREATE TABLE pipeline_logs (
 ## 九、关键注意事项
 
 1. **LLM 调用成本控制**：表头对齐每个数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（最多 50 条），不全量送。
-2. **不允许完全依赖 LLM**：LLM 判异结果是辅助性的，用户可人工覆盖。最终决定权在业务人员。
+2. **不允许完全依赖 LLM**：LLM 判异结果是辅助性的，用户可人工覆盖。最终决定权在业务人员。LLM 调用失败时，IQR 候选自动降级为 `pending_review` 状态保留，不做丢弃。
 3. **原始数据不可覆盖**：`raw_records` 表保留原始 JSON，清洗和标准化都在派生表上进行。
 4. **PDF 提取的局限性**：纯扫描件 PDF 需要额外的 OCR（PaddleOCR/Tesseract），当前架构未集成。首期只支持文本型 PDF。
 5. **MySQL 连接安全**：生产环境建议使用 `cryptography` 库的 Fernet 对称加密存储数据源密码。
