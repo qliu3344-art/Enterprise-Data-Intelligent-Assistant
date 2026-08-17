@@ -110,21 +110,14 @@ def index_all(force: bool = False) -> dict:
     texts = [c.text for c in chunks]
     embeddings = embed_documents(texts)
 
-    # 存入 ChromaDB
+    # 存入 ChromaDB — 先清空旧数据（保留 collection 避免窗口期）
     collection = get_collection()
 
-    # 清空旧数据
-    try:
-        client = _get_client()
-        client.delete_collection(COLLECTION_NAME)
-    except Exception:
-        pass
-
-    global _collection
-    _collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
+    # 获取并删除所有已有向量（不删除 collection，中间查询返回空而非报错）
+    existing = collection.get()
+    if existing and existing.get("ids"):
+        collection.delete(ids=existing["ids"])
+        logger.info(f"已清空 {len(existing['ids'])} 条旧向量")
 
     ids = [f"chunk_{i}" for i in range(len(chunks))]
     metadatas = [
@@ -137,11 +130,11 @@ def index_all(force: bool = False) -> dict:
         for c in chunks
     ]
 
-    # 分批写入，避免一次性写入过多
+    # 分批写入
     batch_size = 50
     for i in range(0, len(ids), batch_size):
         end = min(i + batch_size, len(ids))
-        _collection.add(
+        collection.add(
             ids=ids[i:end],
             embeddings=embeddings[i:end],
             documents=texts[i:end],

@@ -11,7 +11,15 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine, Base
-from app.models import DataSource, RawRecord, CleanedRecord, SchemaMapping, PipelineLog  # noqa: F401
+from app.models import (  # noqa: F401
+    DataSource,
+    RawRecord,
+    CleanedRecord,
+    SchemaMapping,
+    PipelineLog,
+    ChatHistory,
+    QueryTrace,
+)
 
 
 def init():
@@ -40,6 +48,8 @@ def init():
     print("  - cleaned_records")
     print("  - schema_mappings")
     print("  - pipeline_logs")
+    print("  - chat_history")
+    print("  - query_trace")
 
 
 if __name__ == "__main__":

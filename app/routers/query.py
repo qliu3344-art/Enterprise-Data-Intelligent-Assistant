@@ -8,7 +8,7 @@
 
 import asyncio
 import json
-from concurrent.futures import ThreadPoolExecutor
+import time
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -17,14 +17,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.logger import logger
-from app.services.query_agent import run_query
 from app.services.intent_router import classify_intent
 from app.services.rag.service import ask_rag
 
 router = APIRouter(prefix="/query", tags=["自然语言查询"])
-
-# 混合模式并行调用线程池
-_executor = ThreadPoolExecutor(max_workers=2)
 
 # —— 融合 Prompt ——
 FUSION_PROMPT = """你是一个专业的企业数据分析师。请综合以下两部分信息，回答用户问题。
@@ -111,8 +107,49 @@ def _fuse_hybrid_answer(
         return agent_answer
 
 
+def _save_trace(
+    db: Session,
+    session_id: str,
+    question: str,
+    answer: str,
+    intent: str,
+    mode: str,
+    t0: float,
+    iterations: int = 0,
+    tools_used: list | None = None,
+):
+    """写入对话历史（chat_history）+ 查询 trace（query_trace）。
+
+    trace 写入失败不影响主查询结果，所以整体包 try/except。
+    """
+    from app.models.chat_history import ChatHistory
+    from app.models.query_trace import QueryTrace
+
+    tools_used = tools_used or []
+    latency_ms = round((time.time() - t0) * 1000, 1)
+    try:
+        db.add(ChatHistory(session_id=session_id, role="user", content=question))
+        db.add(ChatHistory(session_id=session_id, role="assistant", content=answer))
+        db.add(
+            QueryTrace(
+                session_id=session_id,
+                question=question,
+                answer=answer,
+                intent=intent,
+                mode=mode,
+                iterations=iterations,
+                tools_used=tools_used,
+                latency_ms=latency_ms,
+            )
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.warning(f"trace 写入失败（不影响查询）: {e}")
+
+
 @router.post("", response_model=dict)
-def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
+async def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
     """使用自然语言查询数据平台。
 
     背后是 LangChain ReAct Agent + 通义千问 + RAG 制度检索。
@@ -124,6 +161,7 @@ def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
     - 郑十为什么被标记为异常？        → hybrid LLM 融合
     """
     thread_id = body.session_id or "default"
+    t0 = time.time()
 
     # 1. 意图分类
     intent_result = classify_intent(body.question)
@@ -134,21 +172,34 @@ def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
         result = ask_rag(body.question)
         result["mode"] = "rag"
         result["intent"] = intent
+        _save_trace(db, thread_id, body.question, result["answer"], intent, "rag", t0)
         return {"code": 200, "message": "ok", "data": result}
+
     elif intent == "hybrid":
-        # 并行调用 Agent + RAG（节省 ~50% 延迟）
-        agent_future = _executor.submit(run_query, body.question, db, thread_id)
-        rag_result = ask_rag(body.question)
-        agent_result = agent_future.result()
+        # 并行调用 Agent + RAG（asyncio 协程并发，无需线程池）
+        agent_task = asyncio.create_task(
+            _collect_agent_stream(body.question, thread_id)
+        )
+        rag_result = await asyncio.to_thread(ask_rag, body.question)
+
+        _, agent_answer, iterations, tools_used = await agent_task
         rag_answer = rag_result.get("answer", "")
         rag_sources = rag_result.get("sources", [])
-        final_answer = _fuse_hybrid_answer(
-            question=body.question,
-            agent_answer=agent_result["answer"],
-            rag_answer=rag_answer,
-            rag_chunks=rag_sources,
+
+        final_answer = await asyncio.to_thread(
+            _fuse_hybrid_answer,
+            body.question,
+            agent_answer,
+            rag_answer,
+            rag_sources,
         )
-        result = {
+
+        _save_trace(
+            db, thread_id, body.question, final_answer, intent, "hybrid", t0,
+            iterations, tools_used,
+        )
+
+        return {
             "code": 200,
             "message": "ok",
             "data": {
@@ -157,8 +208,8 @@ def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
                 "mode": "hybrid",
                 "intent": intent,
                 "agent_data": {
-                    "iterations": agent_result.get("iterations", 0),
-                    "tools_used": agent_result.get("tools_used", []),
+                    "iterations": iterations,
+                    "tools_used": tools_used,
                 },
                 "rag_data": {
                     "chunks_count": rag_result.get("chunks_count", 0),
@@ -166,13 +217,27 @@ def natural_language_query(body: QueryRequest, db: Session = Depends(get_db)):
                 },
             },
         }
-    else:
-        agent_result = run_query(body.question, db, thread_id)
-        agent_result["mode"] = "agent"
-        agent_result["intent"] = intent
-        result = {"code": 200, "message": "ok", "data": agent_result}
 
-    return result
+    else:
+        _, answer, iterations, tools_used = await _collect_agent_stream(
+            body.question, thread_id
+        )
+        _save_trace(
+            db, thread_id, body.question, answer, intent, "agent", t0,
+            iterations, tools_used,
+        )
+        return {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "question": body.question,
+                "answer": answer,
+                "mode": "agent",
+                "intent": intent,
+                "iterations": iterations,
+                "tools_used": tools_used,
+            },
+        }
 
 
 # —— SSE 格式化 ——
@@ -181,21 +246,25 @@ def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-async def _collect_agent_stream(question: str, thread_id: str = "default") -> tuple[list, str]:
-    """收集 Agent 流式事件，返回 (中间事件列表, 最终答案)。"""
+async def _collect_agent_stream(question: str, thread_id: str = "default") -> tuple[list, str, int, list]:
+    """收集 Agent 流式事件，返回 (中间事件列表, 最终答案, iterations, tools_used)。"""
     from app.services.query_agent import run_query_stream
 
     events = []
     final_answer = ""
+    iterations = 0
+    tools_used = []
     async for evt in run_query_stream(question, thread_id):
         if evt["event"] == "answer":
             final_answer = evt["data"].get("content", "")
+            iterations = evt["data"].get("iterations", 0)
+            tools_used = evt["data"].get("tools_used", [])
         elif evt["event"] == "error":
             final_answer = evt["data"].get("message", "查询服务暂时不可用")
             events.append(evt)
         elif evt["event"] not in ("done", "agent_start"):
             events.append(evt)
-    return events, final_answer
+    return events, final_answer, iterations, tools_used
 
 
 @router.post("/stream")
@@ -223,6 +292,7 @@ async def natural_language_query_stream(
     thread_id = body.session_id or "default"
 
     async def event_generator():
+        done_sent = False
         try:
             # 1. 意图分类
             intent_result = classify_intent(body.question)
@@ -230,16 +300,10 @@ async def natural_language_query_stream(
             yield _sse("intent", {"intent": intent})
 
             if intent == "data_query":
-                final_answer = ""
                 async for evt in run_query_stream(body.question, thread_id):
-                    if evt["event"] == "answer":
-                        final_answer = evt["data"].get("content", "")
-                        yield _sse(evt["event"], evt["data"])
-                    elif evt["event"] == "done":
+                    if evt["event"] == "done":
                         break
-                    else:
-                        yield _sse(evt["event"], evt["data"])
-                yield _sse("done", {})
+                    yield _sse(evt["event"], evt["data"])
 
             elif intent == "doc_query":
                 result = await asyncio.to_thread(ask_rag, body.question)
@@ -252,7 +316,6 @@ async def natural_language_query_stream(
                         "mode": "rag",
                     },
                 )
-                yield _sse("done", {})
 
             else:  # hybrid
                 # 并行：Agent 流式 + RAG
@@ -261,7 +324,7 @@ async def natural_language_query_stream(
                 )
                 rag_result = await asyncio.to_thread(ask_rag, body.question)
 
-                agent_events, agent_answer = await agent_task
+                agent_events, agent_answer, _, _ = await agent_task
 
                 # 逐条推送 Agent 中间事件（tool_call / tool_result）
                 for evt in agent_events:
@@ -295,11 +358,15 @@ async def natural_language_query_stream(
                         "intent": intent,
                     },
                 )
-                yield _sse("done", {})
+
+            yield _sse("done", {})
+            done_sent = True
 
         except Exception as e:
             logger.error(f"流式查询异常: {e}")
             yield _sse("error", {"message": "查询服务暂时不可用，请稍后重试。"})
-            yield _sse("done", {})
+        finally:
+            if not done_sent:
+                yield _sse("done", {})
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

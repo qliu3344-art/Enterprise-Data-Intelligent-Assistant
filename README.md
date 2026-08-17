@@ -10,6 +10,8 @@
 - **数据清洗 Pipeline** — 去重 → 缺失值填充 → IQR 统计初筛 + LLM 业务异常判定（LLM 失败自动降级为待人工审核），三步流水线
 - **自然语言智能查询** — 用中文提问（"销售部 11 月异常率多少？"），Agent 自动理解意图、执行查询、解释结果
 - **RAG 制度文档问答** — BGE 向量化 + BM25 混合检索 + 引用溯源，让 AI 基于企业内部文档回答制度问题
+- **LLM 调用容错** — 指数退避重试 + 可重试/不可重试分类，异常判定 LLM 失败自动降级为待人工审核
+- **可观测性 Trace** — 每次查询落 `query_trace` 结构化记录（意图/工具/耗时），支撑 badcase 归因
 - **可视化分析报表** — 数据质量报告、趋势分析、异常审核，支持 Excel 导出
 
 ## 🏗️ 技术栈
@@ -20,7 +22,7 @@
 | **ORM** | SQLAlchemy 2.0 + PyMySQL |
 | **数据处理** | Pandas + NumPy |
 | **LLM** | 通义千问 qwen-turbo（DashScope） |
-| **Agent 框架** | LangChain 1.x + LangGraph（ReAct Agent + MemorySaver Checkpointer） |
+| **Agent 框架** | LangChain 1.x + LangGraph（ReAct Agent + SqliteSaver Checkpointer） |
 | **向量检索** | ChromaDB + BGE（sentence-transformers）+ BM25 混合检索 |
 | **PDF 提取** | pdfplumber + LLM 结构化 |
 | **前端** | Vue 3 + Vite + TypeScript |
@@ -115,7 +117,7 @@ npm run build     # 构建到 app/static/，由后端 serve
 │   ├── main.py              # FastAPI 入口，注册 6 个 Router
 │   ├── config.py            # 配置管理（.env → Settings）
 │   ├── database.py          # SQLAlchemy 引擎与 Session
-│   ├── models/              # 6 张数据表 ORM 模型
+│   ├── models/              # 8 张数据表 ORM 模型
 │   ├── schemas/             # Pydantic 请求/响应模型
 │   ├── routers/             # 6 组 REST API
 │   │   ├── datasource.py    # 数据源 CRUD
@@ -195,16 +197,16 @@ python eval.py --skip-agent          # 只测意图分类 + 答案质量（无�
 |---|---|---|
 | 意图分类准确率 | 25% | LLM 是否正确判断 data/doc/hybrid |
 | 工具选择准确率 | 25% | Agent 是否调用了预期工具 |
-| RAG 检索命中率 | 15% | 检索结果是否包含预期文档 |
+| RAG 检索命中率 | 15% | 关键词命中（基线）+ LLM 语义相关性（主指标） |
 | 答案质量评分 | 35% | LLM-as-Judge 1-5 分评分 |
 
 ## ⚠️ 注意事项
 
-- **LLM 调用成本** — 表头对齐每数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（最多 50 条）
+- **LLM 调用成本** — 表头对齐每数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（IQR 已初筛，不再二次截断）
 - **不依赖 LLM** — 异常判定结果为辅助参考，业务人员可人工覆盖
 - **原始数据保护** — `raw_records` 保留原始 JSON，清洗后的数据写入独立表
 - **PDF 限制** — 当前仅支持文本型 PDF，扫描件需额外 OCR
-- **Agent 持久化** — 默认使用 MemorySaver（服务重启后对话历史丢失），生产环境可替换为 SqliteSaver
+- **Agent 持久化** — 默认 SqliteSaver 持久化（服务重启不丢对话历史），SqliteSaver 不可用时回退 MemorySaver
 
 ## 📄 License
 

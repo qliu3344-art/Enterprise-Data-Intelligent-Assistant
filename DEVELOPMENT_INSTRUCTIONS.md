@@ -120,7 +120,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 | ORM | SQLAlchemy 2.0 + PyMySQL | MySQL 连接与批量操作 |
 | 数据处理 | Pandas + NumPy | 数据清洗和转换 |
 | LLM | 通义千问 qwen-turbo（DashScope） | 表头对齐、异常判定、PDF 提取、Agent、RAG 答案生成 |
-| Agent 框架 | LangChain 1.x + LangGraph | ReAct Agent + MemorySaver Checkpointer |
+| Agent 框架 | LangChain 1.x + LangGraph | ReAct Agent + SqliteSaver Checkpointer |
 | 向量检索 | ChromaDB + sentence-transformers (BGE) | RAG 文档向量化与检索 |
 | 关键词检索 | rank-bm25 | BM25 混合检索 |
 | PDF 提取 | pdfplumber | 文本型 PDF 文本提取 |
@@ -153,12 +153,13 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 │  ┌──────────────────┐ └────────────────────────────────────────┘ │
 │  │   Query Agent    │                                            │
 │  │ LangChain ReAct  │                                            │
-│  │ + MemorySaver    │                                            │
+│  │ + SqliteSaver    │                                            │
 │  └──────────────────┘                                            │
 ├──────────────────────────────────────────────────────────────────┤
 │  Database: MySQL (SQLAlchemy ORM)                                │
 │  Tables: data_sources / raw_records / cleaned_records /          │
-│          pipeline_logs / schema_mappings / chat_history          │
+│          pipeline_logs / schema_mappings / chat_history /        │
+│          query_trace                                             │
 ├──────────────────────────────────────────────────────────────────┤
 │  Frontend: Vue 3 SPA (Vite + Element Plus + ECharts)             │
 │  编译为静态文件，由 FastAPI 直接 serve（单端口部署）               │
@@ -178,10 +179,12 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 │   ├── database.py                # SQLAlchemy engine + session
 │   ├── exceptions.py              # 全局异常定义
 │   ├── logger.py                  # 日志系统
+│   ├── retry.py                   # LLM 调用容错重试（指数退避 + 可重试分类）
 │   ├── static/                    # 前端构建产物（npm run build）
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── chat_history.py        # 对话历史表
+│   │   ├── query_trace.py         # 查询 Trace 表（可观测性）
 │   │   ├── cleaned_record.py      # 清洗后统一记录表
 │   │   ├── datasource.py          # 数据源配置表
 │   │   ├── pipeline_log.py        # 清洗流水日志表
@@ -281,7 +284,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 ```
 
 - **Intent Router** (`intent_router.py`)：轻量 LLM 分类，temperature=0，判断 data/doc/hybrid
-- **Query Agent** (`query_agent.py`)：LangChain 1.x `create_agent` + `@tool` 装饰器定义工具 + MemorySaver Checkpointer 持久化对话
+- **Query Agent** (`query_agent.py`)：LangChain 1.x `create_agent` + `@tool` 装饰器定义工具 + SqliteSaver Checkpointer 持久化对话
 - **路由入口** (`routers/query.py`)：三路并发 + SSE 流式响应
 
 ### 5.2 RAG 管线（services/rag/）
@@ -303,7 +306,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 
 1. **去重** — 自动识别主键列组合（员工ID+日期等），`drop_duplicates`
 2. **填充** — 数值列中位数填充，分类列众数填充，日期列不填充
-3. **异常判异** — IQR 统计初筛（最多 50 条候选）→ LLM 终判（结合业务上下文）。LLM 调用失败时自动降级，候选数据标记为 `pending_review` 待人工审核，不丢弃
+3. **异常判异** — IQR 统计初筛 → LLM 终判（结合业务上下文）。IQR 已做初筛，全部候选送 LLM，不再二次截断。LLM 调用失败时自动降级，候选数据标记为 `pending_review` 待人工审核，不丢弃
 
 ### 5.4 Connector 策略模式（services/connectors/）
 
@@ -322,7 +325,7 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 |---|---|---|
 | 意图分类准确率 | 25% | `classify_intent` 是否匹配 `expected_intent` |
 | 工具选择准确率 | 25% | Agent 是否调用了预期工具 |
-| RAG 检索命中率 | 15% | 检索结果是否包含预期文档关键词 |
+| RAG 检索命中率 | 15% | 关键词命中（基线）+ LLM 语义相关性（主指标） |
 | 答案质量 LLM 评分 | 35% | LLM-as-Judge 对最终答案打 1-5 分 |
 
 ```bash
@@ -520,11 +523,11 @@ CREATE TABLE pipeline_logs (
 
 ## 九、关键注意事项
 
-1. **LLM 调用成本控制**：表头对齐每个数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（最多 50 条），不全量送。
+1. **LLM 调用成本控制**：表头对齐每个数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（IQR 已初筛，不再二次截断）。
 2. **不允许完全依赖 LLM**：LLM 判异结果是辅助性的，用户可人工覆盖。最终决定权在业务人员。LLM 调用失败时，IQR 候选自动降级为 `pending_review` 状态保留，不做丢弃。
 3. **原始数据不可覆盖**：`raw_records` 表保留原始 JSON，清洗和标准化都在派生表上进行。
 4. **PDF 提取的局限性**：纯扫描件 PDF 需要额外的 OCR（PaddleOCR/Tesseract），当前架构未集成。首期只支持文本型 PDF。
 5. **MySQL 连接安全**：生产环境建议使用 `cryptography` 库的 Fernet 对称加密存储数据源密码。
 6. **线程安全**：数据库驱动使用 PyMySQL（非 mysql-connector），解决并发请求时的线程安全问题。
 7. **前端部署**：前端编译为静态文件后由 FastAPI 直接 serve，单端口 8002 即可访问完整应用（无需 Nginx 反代或独立前端服务器）。
-8. **Agent Checkpointer**：使用 LangGraph `MemorySaver`（内存级），服务重启后对话历史丢失。生产环境可替换为 `SqliteSaver` 持久化。
+8. **Agent Checkpointer**：使用 LangGraph `SqliteSaver` 持久化（服务重启不丢对话历史），不可用时回退 `MemorySaver`。

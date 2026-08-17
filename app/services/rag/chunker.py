@@ -16,6 +16,14 @@ from app.logger import logger
 MAX_CHUNK_SIZE = 800  # 每块最大字符数
 OVERLAP_CLAUSES = 1    # 相邻块重叠条款数
 
+# 条款编号正则：数字编号（1. / 1）、中文序号（第一条 / 一、/（一））和 ### 标题
+_CLAUSE_PATTERN = re.compile(
+    r"^(\d+[\.\、\)]?\s)"               # 1. / 1) / 1、
+    r"|^(第[一二三四五六七八九十百千\d]+[条款章节])"  # 第一条 / 第二章 / 第3条
+    r"|^([（\(]?[一二三四五六七八九十]+[）\)]?\s)"  # （一）/ 一、
+    r"|^(###\s)"                          # ### 三级标题
+)
+
 
 @dataclass
 class Chunk:
@@ -117,12 +125,12 @@ def chunk_document(title: str, file_name: str, content: str, metadata: dict) -> 
             # 生成 chunks，相邻之间携带重叠条款
             for i, text in enumerate(sub_chunks):
                 if i > 0 and OVERLAP_CLAUSES > 0:
-                    # 从前一个 chunk 尾部取最后几条作为重叠
+                    # 从前一个 chunk 尾部取最后几条条款作为重叠
                     prev_lines = sub_chunks[i - 1].split("\n")
                     overlap_lines = []
                     count = 0
                     for line in reversed(prev_lines):
-                        if re.match(r"^\d+\.\s", line.strip()) or line.strip().startswith("###"):
+                        if _CLAUSE_PATTERN.match(line.strip()):
                             overlap_lines.insert(0, line)
                             count += 1
                             if count >= OVERLAP_CLAUSES:

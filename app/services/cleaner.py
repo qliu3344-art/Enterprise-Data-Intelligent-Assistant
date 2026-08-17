@@ -12,6 +12,7 @@ from dashscope import Generation
 
 from app.config import settings
 from app.logger import logger
+from app.retry import retry_call
 
 ANOMALY_PROMPT = """你是一个业务数据分析师。请判断以下数据中是否存在业务异常值。
 
@@ -152,7 +153,8 @@ class CleaningPipeline:
         )
 
         try:
-            resp = Generation.call(
+            resp = retry_call(
+                Generation.call,
                 model=settings.LLM_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 result_format="message",
@@ -205,7 +207,7 @@ class CleaningPipeline:
         return anomalies
 
     def _iqr_detect(self, df: pd.DataFrame) -> list[dict]:
-        """IQR 方法初筛异常值候选。"""
+        """IQR 方法初筛异常值候选，按偏离程度排序后取 top-N。"""
         candidates = []
         numeric_cols = df.select_dtypes(include=["float64", "int64"]).columns
         for col in numeric_cols:
@@ -214,22 +216,28 @@ class CleaningPipeline:
             IQR = Q3 - Q1
             if IQR == 0:
                 continue
+            median = df[col].median()
             lower = Q1 - 1.5 * IQR
             upper = Q3 + 1.5 * IQR
             outliers = df[(df[col] < lower) | (df[col] > upper)]
             for idx, val in outliers[col].items():
+                if pd.isna(val):
+                    continue
+                deviation = abs(float(val) - float(median)) / float(IQR)
                 candidates.append(
                     {
                         "record_index": int(idx),
                         "field": col,
-                        "value": float(val) if not pd.isna(val) else None,
+                        "value": float(val),
                         "q1": float(Q1),
                         "q3": float(Q3),
                         "iqr": float(IQR),
+                        "deviation": round(deviation, 2),
                     }
                 )
-        # 最多送 LLM_MAX_ANOMALY_CANDIDATES 条
-        return candidates[: settings.LLM_MAX_ANOMALY_CANDIDATES]
+        # 按偏离程度降序排列，全部送给 LLM（IQR 已做初筛，不再二次截断）
+        candidates.sort(key=lambda x: x["deviation"], reverse=True)
+        return candidates
 
     def _compute_basic_stats(self, df: pd.DataFrame) -> str:
         """计算数值列的基本统计量，转为自然语言供 LLM 参考。
@@ -250,12 +258,26 @@ class CleaningPipeline:
         return "\n".join(lines)
 
     def _summarize_candidates(self, candidates: list[dict]) -> str:
-        """将候选异常转为 LLM 可读的文本（只传值和字段，不传统计细节）。"""
+        """将候选异常转为 LLM 可读的文本。
+
+        刻意用模糊描述替代精确数值（如"偏高"、"极低"），避免 LLM 在 reason
+        中忍不住引用数字，与 ANOMALY_PROMPT 的"严禁数字"要求保持一致性。
+        """
         lines = []
         for c in candidates[:30]:
-            lines.append(
-                f"第{c['record_index']}行, 字段={c['field']}, 当前值={c['value']}"
-            )
+            deviation = c.get("deviation", 0)
+            if deviation >= 3.0:
+                level = "严重偏离正常范围"
+            elif deviation >= 2.0:
+                level = "明显偏高/偏低"
+            elif deviation >= 1.5:
+                level = "略超出正常范围"
+            else:
+                level = "处于正常范围边缘"
+
+            field = c["field"]
+            record = c["record_index"]
+            lines.append(f"第{record}行, 字段「{field}」: {level}（偏离度 {deviation} 倍 IQR）")
         return "\n".join(lines)
 
     def _mark_anomalies(

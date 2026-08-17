@@ -2,6 +2,7 @@
 
 import pandas as pd
 from sqlalchemy import create_engine, text
+from urllib.parse import quote_plus
 
 from .base import BaseConnector
 
@@ -34,7 +35,7 @@ class MySQLConnector(BaseConnector):
         host = self.config["db_host"]
         port = self.config.get("db_port", 3306)
         user = self.config["db_user"]
-        password = self.config.get("db_password", "")
+        password = quote_plus(self.config.get("db_password", ""))
         db_name = self.config["db_name"]
         url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db_name}?charset=utf8mb4"
         return create_engine(url)

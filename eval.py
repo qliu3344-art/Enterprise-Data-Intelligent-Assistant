@@ -3,13 +3,14 @@
 维度:
   1. 意图分类准确率     — classify_intent 是否匹配 expected_intent
   2. 工具选择准确率     — Agent 是否调用了 expected_tools（需 DB 有数据）
-  3. RAG 检索命中率     — 检索结果是否包含 expected_doc_keywords（需 ChromaDB 已索引）
+  3. RAG 检索命中率     — 3a: 关键词命中（基线） + 3b: LLM 语义相关性（主指标）
   4. 答案质量 LLM 评分  — LLM-as-Judge 对最终答案打 1-5 分
 
 用法:
-    python eval.py                      # 全量评估
-    python eval.py --category data_query # 只测某类
-    python eval.py --skip-agent          # 只测意图分类 + LLM Judge（无需数据库）
+    python eval.py                        # 全量评估
+    python eval.py --category data_query  # 只测某类
+    python eval.py --skip-agent           # 只测意图分类 + RAG + LLM Judge（无需数据库）
+    python eval.py --skip-rag-semantic    # 跳过语义 RAG，只保留关键词命中率（省钱）
 """
 
 import argparse
@@ -58,6 +59,28 @@ JUDGE_PROMPT = """你是一个评估专家。请对以下 AI 助手的回答质�
 
 输出 JSON 格式：
 {{"relevance": 4, "completeness": 3, "accuracy": 4, "overall": 4, "reason": "简短理由"}}
+只输出 JSON，不要其他内容。"""
+
+# —— RAG 语义相关性 Judge Prompt ——
+RAG_JUDGE_PROMPT = """你是一个检索质量评估专家。判断以下文档片段是否与用户问题**语义相关**。
+
+## 用户问题
+{question}
+
+## 文档片段
+{chunks}
+
+## 判断标准
+- relevant=true: 片段内容能帮助回答用户问题（直接相关或间接相关均可）
+- relevant=false: 片段内容与问题无关，或只有噪音词汇重合
+
+注意：
+- 同义词替换算相关（如"超时工作"↔"加班"、"人员流动"↔"离职"）
+- 只有表面词汇重合但语义无关的不算（如问"加班时长"出现"加班餐补标准"→不相关）
+- 不确定时倾向于判断为相关（宁可多召回，不可漏判）
+
+输出 JSON 数组（按片段顺序）：
+[{{"index": 0, "relevant": true, "reason": "一句话理由"}}, ...]
 只输出 JSON，不要其他内容。"""
 
 
@@ -169,6 +192,88 @@ def eval_rag_retrieval(item: dict) -> dict | None:
     }
 
 
+# —————— 维度 3b: RAG 语义相关性（LLM-as-Judge） ——————
+def eval_rag_semantic(item: dict) -> dict | None:
+    """用 LLM 判断检索到的每个 chunk 是否与问题语义相关。
+
+    相比纯关键词匹配，能正确处理同义替换、反向误判、跨 chunk 语义。
+    """
+    from langchain_community.chat_models.tongyi import ChatTongyi
+    from langchain_core.messages import HumanMessage
+
+    from app.config import settings
+    from app.services.rag.retriever import retrieve as hybrid_retrieve
+
+    # 只测 doc_query 和 hybrid（需要 RAG 的场景）
+    if item.get("expected_intent") not in ("doc_query", "hybrid"):
+        return None
+
+    try:
+        chunks = hybrid_retrieve(item["question"], top_k=5)
+    except Exception as e:
+        return {
+            "question": item["question"],
+            "semantic_hit_rate": 0.0,
+            "total_chunks": 0,
+            "relevant_count": 0,
+            "error": str(e),
+        }
+
+    if not chunks:
+        return {
+            "question": item["question"],
+            "semantic_hit_rate": 0.0,
+            "total_chunks": 0,
+            "relevant_count": 0,
+        }
+
+    # 构建 chunks 文本（编号后喂给 LLM）
+    chunks_text_parts = []
+    for i, chunk in enumerate(chunks):
+        text = chunk.get("text", "")[:300]  # 截断，节省 token
+        title = chunk.get("doc_title", "")
+        header = f"[{i}] 《{title}》" if title else f"[{i}]"
+        chunks_text_parts.append(f"{header}\n{text}")
+    chunks_text = "\n\n".join(chunks_text_parts)
+
+    prompt = RAG_JUDGE_PROMPT.format(
+        question=item["question"],
+        chunks=chunks_text,
+    )
+
+    try:
+        llm = ChatTongyi(
+            model=settings.LLM_MODEL,
+            dashscope_api_key=settings.DASHSCOPE_API_KEY,
+            temperature=0.1,
+            max_tokens=400,
+        )
+        response = llm.invoke([HumanMessage(content=prompt)])
+        content = response.content.strip()
+        if content.startswith("```"):
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        judgments = json.loads(content)
+
+        relevant_count = sum(1 for j in judgments if j.get("relevant"))
+        semantic_hit_rate = round(relevant_count / len(chunks), 2)
+
+        return {
+            "question": item["question"],
+            "semantic_hit_rate": semantic_hit_rate,
+            "total_chunks": len(chunks),
+            "relevant_count": relevant_count,
+            "judgments": judgments,
+        }
+    except Exception as e:
+        return {
+            "question": item["question"],
+            "semantic_hit_rate": 0.0,
+            "total_chunks": len(chunks),
+            "relevant_count": 0,
+            "error": f"LLM 判断失败: {e}",
+        }
+
+
 # —————— 维度 4: LLM-as-Judge 答案质量 ——————
 def eval_answer_quality(item: dict, answer: str) -> dict:
     """使用 LLM-as-Judge 对答案质量评分。"""
@@ -247,6 +352,7 @@ def run_eval(
     dataset: list[dict],
     skip_agent: bool = False,
     skip_judge: bool = False,
+    skip_rag_semantic: bool = False,
     category_filter: str = None,
 ):
     """执行全量评估并输出报告。"""
@@ -261,10 +367,12 @@ def run_eval(
             "eval_time": datetime.now().isoformat(),
             "skip_agent": skip_agent,
             "skip_judge": skip_judge,
+            "skip_rag_semantic": skip_rag_semantic,
         },
         "intent": [],
         "tool_selection": [],
         "rag_retrieval": [],
+        "rag_semantic": [],
         "answer_quality": [],
     }
 
@@ -293,14 +401,24 @@ def run_eval(
                     else:
                         print(f"  工具: precision={tool_result['precision']} recall={tool_result['recall']}")
 
-            # 维度 3: RAG 检索（需要 ChromaDB + BGE 模型）
+            # 维度 3a: RAG 关键词命中率（快速基线）
             rag_result = eval_rag_retrieval(item)
             if rag_result:
                 results["rag_retrieval"].append(rag_result)
                 if "error" in rag_result:
-                    print(f"  RAG:  ⚠️ {rag_result['error'][:80]}")
+                    print(f"  RAG(kw): ⚠️ {rag_result['error'][:80]}")
                 else:
-                    print(f"  RAG:  hit_rate={rag_result['hit_rate']} ({rag_result['hit_count']}/{rag_result['total_chunks']})")
+                    print(f"  RAG(kw): hit_rate={rag_result['hit_rate']} ({rag_result['hit_count']}/{rag_result['total_chunks']})")
+
+            # 维度 3b: RAG 语义相关性（LLM-as-Judge，主指标）
+            if not skip_rag_semantic:
+                rag_sem_result = eval_rag_semantic(item)
+                if rag_sem_result:
+                    results["rag_semantic"].append(rag_sem_result)
+                    if "error" in rag_sem_result:
+                        print(f"  RAG(sem): ⚠️ {rag_sem_result['error'][:80]}")
+                    else:
+                        print(f"  RAG(sem): semantic_hit_rate={rag_sem_result['semantic_hit_rate']} ({rag_sem_result['relevant_count']}/{rag_sem_result['total_chunks']})")
 
             # 维度 4: LLM-as-Judge
             if not skip_judge:
@@ -347,13 +465,34 @@ def run_eval(
         avg_recall = 0
         print(f"\n📌 工具选择: 无测试用例（跳过）")
 
-    # RAG 检索
+    # RAG 检索 — 关键词命中率（基线）
     if results["rag_retrieval"]:
         avg_hit_rate = round(sum(r["hit_rate"] for r in results["rag_retrieval"]) / len(results["rag_retrieval"]), 2)
-        print(f"\n📌 RAG 检索命中率: {avg_hit_rate}\t权重: {WEIGHTS['rag_hit_rate']}")
+        print(f"\n📌 RAG 关键词命中率（基线）: {avg_hit_rate}\t权重: {WEIGHTS['rag_hit_rate']}")
     else:
         avg_hit_rate = 0
-        print(f"\n📌 RAG 检索: 无测试用例（跳过）")
+        print(f"\n📌 RAG 关键词命中率: 无测试用例（跳过）")
+
+    # RAG 检索 — 语义命中率（主指标）
+    if results["rag_semantic"]:
+        avg_sem_hit_rate = round(sum(r["semantic_hit_rate"] for r in results["rag_semantic"]) / len(results["rag_semantic"]), 2)
+        print(f"📌 RAG 语义命中率（LLM-Judge）: {avg_sem_hit_rate}\t← 维度 3 主指标")
+        # 打印语义 vs 关键词差异大的条目
+        if results["rag_retrieval"] and len(results["rag_retrieval"]) == len(results["rag_semantic"]):
+            diffs = []
+            for kw, sem in zip(results["rag_retrieval"], results["rag_semantic"]):
+                if kw["question"] == sem["question"]:
+                    diff = sem["semantic_hit_rate"] - kw["hit_rate"]
+                    if abs(diff) >= 0.4:
+                        diffs.append((kw["question"][:50], kw["hit_rate"], sem["semantic_hit_rate"], diff))
+            if diffs:
+                print(f"\n  关键词 vs 语义差异 ≥0.4 的条目 ({len(diffs)} 条):")
+                for q, kw_rate, sem_rate, diff in diffs:
+                    direction = "↑语义更高" if diff > 0 else "↓关键词更高"
+                    print(f"    {direction}: kw={kw_rate} sem={sem_rate} | {q}")
+    else:
+        avg_sem_hit_rate = 0
+        print(f"📌 RAG 语义命中率: 无测试用例（跳过）")
 
     # 答案质量
     if results["answer_quality"]:
@@ -367,11 +506,11 @@ def run_eval(
     else:
         avg_overall = 0
 
-    # 综合评分
+    # 综合评分（RAG 维度使用语义命中率）
     overall = (
         (intent_acc / 100) * WEIGHTS["intent_accuracy"]
         + avg_precision * WEIGHTS["tool_selection"]
-        + avg_hit_rate * WEIGHTS["rag_hit_rate"]
+        + avg_sem_hit_rate * WEIGHTS["rag_hit_rate"]
         + (avg_overall / 5) * WEIGHTS["answer_quality"]
     )
     overall_pct = round(overall * 100, 1)
@@ -399,6 +538,8 @@ if __name__ == "__main__":
                         help="跳过工具选择评估（无需数据库）")
     parser.add_argument("--skip-judge", action="store_true",
                         help="跳过 LLM-as-Judge 评分")
+    parser.add_argument("--skip-rag-semantic", action="store_true",
+                        help="跳过 RAG 语义相关性评估（仅保留关键词命中率）")
     parser.add_argument("--dataset", type=str, default=None,
                         help="自定义数据集路径")
     args = parser.parse_args()
@@ -408,5 +549,6 @@ if __name__ == "__main__":
         dataset,
         skip_agent=args.skip_agent,
         skip_judge=args.skip_judge,
+        skip_rag_semantic=args.skip_rag_semantic,
         category_filter=args.category,
     )
