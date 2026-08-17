@@ -66,38 +66,72 @@ class PDFConnector(BaseConnector):
         return text
 
     def _llm_extract(self, text: str) -> dict:
-        """调用 LLM 将非结构化文本转为结构化 JSON。"""
-        # 截断过长文本（dashscope 有 token 限制）
-        truncated = text[:8000] if len(text) > 8000 else text
+        """调用 LLM 将非结构化文本转为结构化 JSON。
 
-        try:
-            resp = Generation.call(
-                model=settings.LLM_MODEL,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": PDF_EXTRACT_PROMPT.format(pdf_text=truncated),
-                    }
-                ],
-                result_format="message",
-                temperature=0.1,
+        超过单次处理的文本按页分批送 LLM，最后合并所有提取结果。
+        """
+        MAX_CHUNK_CHARS = 6000  # 单次 LLM 调用的文本上限（留 buffer 给 prompt）
+
+        # 按页切分（_extract_text 中每页用 \n\n 拼接）
+        pages = text.split("\n\n")
+        chunks: list[str] = []
+        current = ""
+        for page in pages:
+            if len(current) + len(page) > MAX_CHUNK_CHARS and current:
+                chunks.append(current)
+                current = page
+            else:
+                current = current + "\n\n" + page if current else page
+        if current:
+            chunks.append(current)
+
+        if len(chunks) > 1:
+            logger.warning(
+                f"PDF 文本过长（{len(text)} 字符），分 {len(chunks)} 批处理"
             )
 
-            if resp.status_code != 200:
-                raise LLMException(f"LLM 调用失败: {resp.message}")
+        all_headers: list[str] = []
+        all_rows: list[list] = []
 
-            content = resp.output.choices[0].message.content.strip()
+        for chunk_idx, chunk_text in enumerate(chunks):
+            try:
+                resp = Generation.call(
+                    model=settings.LLM_MODEL,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": PDF_EXTRACT_PROMPT.format(pdf_text=chunk_text),
+                        }
+                    ],
+                    result_format="message",
+                    temperature=0.1,
+                )
 
-            # 清理 markdown 代码块包裹
-            if content.startswith("```"):
-                content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                if resp.status_code != 200:
+                    raise LLMException(f"LLM 调用失败: {resp.message}")
 
-            return json.loads(content)
+                content = resp.output.choices[0].message.content.strip()
 
-        except json.JSONDecodeError as e:
-            logger.error(f"LLM 返回非 JSON: {content[:200]}")
-            raise LLMException(f"LLM 返回格式异常，无法解析为 JSON: {e}")
-        except Exception as e:
-            if isinstance(e, LLMException):
-                raise
-            raise LLMException(f"LLM 提取失败: {e}")
+                # 清理 markdown 代码块包裹
+                if content.startswith("```"):
+                    content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+                chunk_result = json.loads(content)
+
+                chunk_headers = chunk_result.get("headers", [])
+                chunk_rows = chunk_result.get("rows", [])
+
+                # 合并：第一批的 headers 作为基准，后续批只取 rows
+                if chunk_idx == 0:
+                    all_headers = chunk_headers
+                all_rows.extend(chunk_rows)
+
+            except json.JSONDecodeError as e:
+                logger.error(f"LLM 返回非 JSON: {content[:200]}")
+                raise LLMException(f"LLM 返回格式异常，无法解析为 JSON: {e}")
+            except Exception as e:
+                if isinstance(e, LLMException):
+                    raise
+                raise LLMException(f"LLM 提取失败: {e}")
+
+        return {"headers": all_headers, "rows": all_rows}

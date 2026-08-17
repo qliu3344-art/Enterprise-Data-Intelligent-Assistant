@@ -7,6 +7,7 @@
   - 最终返回 top_k 条结果
 """
 
+import re
 from typing import List
 
 from rank_bm25 import BM25Okapi
@@ -17,29 +18,30 @@ from app.services.rag.vector_store import search as vector_search
 
 
 def _tokenize(text: str) -> List[str]:
-    """中文分词：使用字符级 bigram + 单字作为 fallback。
+    """中文 bigram + 英文单词级 混合分词。
 
-    不使用 jieba 等第三方分词库，避免依赖膨胀。
-    Bigram 分词对于中文短文本检索效果足够好。
+    中文：字符级 bigram + unigram，适合短文本检索。
+    英文：保留完整单词（以空白/标点分隔），不做字母级拆分。
     """
-    # 移除标点和空白
-    cleaned = ""
-    for ch in text:
-        if ch.isalnum() or "一" <= ch <= "鿿":
-            cleaned += ch
-        else:
-            cleaned += " "
+    tokens: List[str] = []
 
-    tokens = []
-    # Bigram
-    for i in range(len(cleaned) - 1):
-        bigram = cleaned[i:i + 2]
-        if not bigram.isspace():
-            tokens.append(bigram)
-    # Unigram（中文字符）
-    for ch in cleaned:
-        if "一" <= ch <= "鿿":
-            tokens.append(ch)
+    # 按语言边界切分：中文连续块 vs 英文/数字连续块
+    segments = re.split(r"([一-鿿]+)", text)
+
+    for seg in segments:
+        if not seg.strip():
+            continue
+        if re.match(r"[一-鿿]+", seg):
+            # 中文块：bigram + unigram
+            cleaned = seg.replace(" ", "")
+            for i in range(len(cleaned) - 1):
+                tokens.append(cleaned[i:i + 2])
+            for ch in cleaned:
+                tokens.append(ch)
+        else:
+            # 英文/数字块：按单词拆分
+            words = re.findall(r"[a-zA-Z0-9]+", seg)
+            tokens.extend(w.lower() for w in words)
 
     return tokens
 
@@ -51,6 +53,7 @@ class HybridRetriever:
         self._bm25: BM25Okapi | None = None
         self._corpus: List[str] = []
         self._metadatas: List[dict] = []
+        self._text_to_idx: dict[str, int] = {}  # 文本 → corpus index 快速反查
         self._initialized = False
 
     def _ensure_initialized(self):
@@ -69,6 +72,9 @@ class HybridRetriever:
         result = collection.get(include=["documents", "metadatas"])
         self._corpus = result["documents"] or []
         self._metadatas = result["metadatas"] or []
+
+        # 构建文本 → 索引反查表，向量结果回映射从 O(n²) → O(n)
+        self._text_to_idx = {text: i for i, text in enumerate(self._corpus)}
 
         tokenized = [_tokenize(doc) for doc in self._corpus]
         self._bm25 = BM25Okapi(tokenized)
@@ -101,16 +107,12 @@ class HybridRetriever:
         query_vec = embed_query(query)
         vector_hits = vector_search(query_vec, top_k=20)
 
-        # 向量结果需要映射回 corpus index
+        # 向量结果回映射 corpus index（O(1) 反查，代替原来的 O(n) 线性搜索）
         vector_ranked = []
         for hit in vector_hits:
-            hit_text = hit["text"]
-            try:
-                idx = self._corpus.index(hit_text)
+            idx = self._text_to_idx.get(hit["text"])
+            if idx is not None:
                 vector_ranked.append((idx, hit["score"]))
-            except ValueError:
-                # 文本不完全匹配（不应该发生），跳过
-                pass
 
         # —— RRF 融合 ——
         k = 60
@@ -140,6 +142,7 @@ class HybridRetriever:
         self._bm25 = None
         self._corpus = []
         self._metadatas = []
+        self._text_to_idx = {}
         self._initialized = False
         logger.info("BM25 索引已刷新")
 

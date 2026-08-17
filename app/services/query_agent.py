@@ -26,7 +26,27 @@ from app.logger import logger
 
 # —— 全局 Checkpointer 单例 ——
 # 所有 Agent 实例共享同一个 checkpointer，通过 thread_id 隔离会话
-_checkpointer = MemorySaver()
+# 优先使用 SqliteSaver 持久化（服务重启不丢失对话历史），回退 MemorySaver
+
+def _create_checkpointer():
+    """创建 checkpointer，SqliteSaver 优先，MemorySaver 兜底。"""
+    import os
+    from pathlib import Path
+
+    # 数据目录
+    data_dir = Path(__file__).resolve().parent.parent.parent / "data"
+    data_dir.mkdir(exist_ok=True)
+
+    try:
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        db_path = str(data_dir / "agent_checkpoints.db")
+        logger.info(f"使用 SqliteSaver: {db_path}")
+        return SqliteSaver.from_conn_string(db_path)
+    except ImportError:
+        logger.warning("SqliteSaver 不可用（pip install aiosqlite），回退 MemorySaver")
+        return MemorySaver()
+
+_checkpointer = _create_checkpointer()
 
 # —— System Prompt：指导 LLM 使用工具并输出结构化答案 ——
 SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问自动化客户数据处理平台的数据库。
@@ -38,6 +58,8 @@ SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问自动�
   - 问某个人/某部门的业务数据（"张三的销售业绩"、"技术部的考勤记录"）
   - 按条件筛选记录（"合同金额>10万的客户"、"跟进日期超过30天的"）
   - 需要看逐条明细而非汇总数字时
+⚠ 只返回原始数据行，不做统计聚合。问整体情况/异常率/排名/哪个最好
+  → 用 get_summary_stats；问"为什么异常" → 用 get_anomaly_details。
 参数：data_type（考勤/销售/客户/运营）、department、date_start、date_end、limit
 
 ### get_summary_stats — 查整体统计
@@ -45,12 +67,17 @@ SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问自动�
   - 问整体数据概况（"异常率多少"、"数据质量怎么样"）
   - 问排名/对比（"各部门异常率排名"、"哪个部门最好/最差"）
   - 问汇总数字而非具体人明细时
+⚠ 只返回聚合后的统计数字，不含逐条明细。问具体人的业务数据/条件筛选明细
+  → 用 query_cleaned_records；问"为什么异常"/异常详情 → 用 get_anomaly_details。
 参数：data_type（可选，不传则查全部）
 
 ### get_anomaly_details — 查异常原因
 查被标记为异常的记录及其原因。适用场景：
   - 问"为什么异常"、"有哪些异常记录"、"异常原因是什么"
   - 问某部门/某人的异常情况时
+⚠ 只查已被系统标记（is_anomaly=True）的记录。用户只是按条件筛选原始数据
+  （如"跟进超30天的客户"、"金额>10万的订单"）→ 用 query_cleaned_records；
+  问异常率/整体分布 → 用 get_summary_stats。
 参数：data_type、department、employee_name、limit
 
 ## 工具选择决策树
@@ -58,6 +85,8 @@ SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问自动�
 2. 问题涉及"整体统计/排名/对比/比率"（如异常率、排名、哪个最好）→ 用 get_summary_stats
 3. 问题涉及"异常原因/异常标记" → 用 get_anomaly_details
 4. 不确定时，先想清楚用户要的是"一条条的明细"还是"汇总后的数字"
+5. 复杂问题可能需要多个工具组合。例如"分析销售部表现并举例"：先 get_summary_stats
+   看全局，再 get_anomaly_details 找具体案例。多工具的结果要融合作答，不要各说各的。
 
 ## 参数提示
 - 问具体人时传 employee_name（如"郑十"、"张三"）
@@ -82,12 +111,21 @@ def _get_db():
     return SessionLocal()
 
 
-def create_analysis_agent():
-    """创建一个数据分析 Agent，基于 LangChain 1.x create_agent。
+# —— 缓存 Agent 实例 ——
+# 避免每次查询都重新创建 Agent（涉及 LangGraph 状态图编译）
+_agent_instance = None
 
-    每个工具函数内部独立获取 scoped_session，保证在 LangGraph
-    多线程并发调用工具时，各线程拥有独立的 DB 连接，不会相互干扰。
-    """
+
+def get_agent():
+    """获取或创建缓存的 Agent 实例（懒加载，线程安全）。"""
+    global _agent_instance
+    if _agent_instance is None:
+        _agent_instance = _build_agent()
+    return _agent_instance
+
+
+def _build_agent():
+    """构建 Agent（内部函数，仅首次调用时执行）。"""
 
     # —— 工具定义 ——
 
@@ -386,7 +424,7 @@ def run_query(question: str, db: Session = None, thread_id: str = "default") -> 
 
     config = {"configurable": {"thread_id": thread_id}}
     try:
-        agent = create_analysis_agent()
+        agent = get_agent()
         result = agent.invoke(
             {"messages": [HumanMessage(content=question)]},
             config=config,
@@ -444,7 +482,7 @@ async def run_query_stream(question: str, thread_id: str = "default"):
     config = {"configurable": {"thread_id": thread_id}}
 
     try:
-        agent = create_analysis_agent()
+        agent = get_agent()
 
         yield {"event": "agent_start", "data": {"question": question}}
 

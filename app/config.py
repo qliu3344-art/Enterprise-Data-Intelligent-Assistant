@@ -41,9 +41,6 @@ class Settings:
         os.path.dirname(os.path.dirname(__file__)), "data", "exports"
     )
 
-    # LLM 调用限制
-    LLM_MAX_ANOMALY_CANDIDATES: int = 50
-
     # 日志
     LOG_DIR: str = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "logs"

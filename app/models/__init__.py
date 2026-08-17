@@ -4,6 +4,7 @@ from app.models.cleaned_record import CleanedRecord
 from app.models.pipeline_log import PipelineLog
 from app.models.schema_mapping import SchemaMapping
 from app.models.chat_history import ChatHistory
+from app.models.query_trace import QueryTrace
 
 __all__ = [
     "DataSource",
@@ -12,4 +13,5 @@ __all__ = [
     "PipelineLog",
     "SchemaMapping",
     "ChatHistory",
+    "QueryTrace",
 ]

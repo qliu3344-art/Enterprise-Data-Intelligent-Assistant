@@ -38,6 +38,7 @@ INTERVIEW_GUIDE.md
 
 # 评估报告（历史记录，体积大）
 eval_report_*.json
+eval_dataset_backup_*.json
 
 # 临时文件
 Untitled

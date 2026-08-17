@@ -1,0 +1,1883 @@
+[
+  {
+    "id": 1,
+    "question": "销售部11月的异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "original_1"
+  },
+  {
+    "id": 2,
+    "question": "销售部11月份的异常率是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "variant_of_1"
+  },
+  {
+    "id": 3,
+    "question": "11月销售部的异常率怎么样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "variant_of_1"
+  },
+  {
+    "id": 4,
+    "question": "上个月销售异常率是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "variant_of_1"
+  },
+  {
+    "id": 5,
+    "question": "销售数据在11月的异常率是什么情况",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "variant_of_1"
+  },
+  {
+    "id": 6,
+    "question": "销售那边11月的异常率多少啊",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "异常率",
+      "销售"
+    ],
+    "category": "data_query",
+    "source": "variant_of_1"
+  },
+  {
+    "id": 7,
+    "question": "郑十为什么被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "original_2",
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ]
+  },
+  {
+    "id": 8,
+    "question": "郑十的异常情况是怎么回事",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_2"
+  },
+  {
+    "id": 9,
+    "question": "为什么郑十会被标记为异常",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_2"
+  },
+  {
+    "id": 10,
+    "question": "郑十为什么出现异常标记",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_2"
+  },
+  {
+    "id": 11,
+    "question": "郑十的异常原因是什么",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_2"
+  },
+  {
+    "id": 12,
+    "question": "郑十的异常状态怎么产生的",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_2"
+  },
+  {
+    "id": 13,
+    "question": "加班超过多少小时算异常？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "original_3"
+  },
+  {
+    "id": 14,
+    "question": "加班时长超过多少算异常",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_3"
+  },
+  {
+    "id": 15,
+    "question": "超过多少小时的加班会被视为异常",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_3"
+  },
+  {
+    "id": 16,
+    "question": "加班多久算异常情况",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_3"
+  },
+  {
+    "id": 17,
+    "question": "加班时间超过多少属于异常",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_3"
+  },
+  {
+    "id": 18,
+    "question": "什么时候加班会被认为是异常",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班",
+      "异常",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "小时"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_3"
+  },
+  {
+    "id": 19,
+    "question": "技术部有多少条异常记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "original_4"
+  },
+  {
+    "id": 20,
+    "question": "技术部的异常记录有多少条",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "variant_of_4"
+  },
+  {
+    "id": 21,
+    "question": "异常数据在技术部有多少条",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "variant_of_4"
+  },
+  {
+    "id": 22,
+    "question": "技术部的异常情况有多少条记录",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "variant_of_4"
+  },
+  {
+    "id": 23,
+    "question": "技术部的异常数量是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "variant_of_4"
+  },
+  {
+    "id": 24,
+    "question": "技术部上个月有多少条异常记录",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "variant_of_4"
+  },
+  {
+    "id": 25,
+    "question": "考勤制度对迟到的规定是什么？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "original_5"
+  },
+  {
+    "id": 26,
+    "question": "考勤方面迟到有什么规定",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_5"
+  },
+  {
+    "id": 27,
+    "question": "公司对迟到是怎么规定的",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_5"
+  },
+  {
+    "id": 28,
+    "question": "迟到的处罚标准是什么",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_5"
+  },
+  {
+    "id": 29,
+    "question": "员工迟到会有什么处理办法",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_5"
+  },
+  {
+    "id": 30,
+    "question": "关于迟到的规定有哪些内容",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到",
+      "考勤"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "规定"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_5"
+  },
+  {
+    "id": 31,
+    "question": "运营部完成率最低的指标是什么？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "original_6"
+  },
+  {
+    "id": 32,
+    "question": "运营部哪个指标完成率最低",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_6"
+  },
+  {
+    "id": 33,
+    "question": "运营部完成率最差的是什么指标",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_6"
+  },
+  {
+    "id": 34,
+    "question": "运营部的指标中哪个完成率最低",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_6"
+  },
+  {
+    "id": 35,
+    "question": "上个月运营部完成率最低的是什么",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_6"
+  },
+  {
+    "id": 36,
+    "question": "运营部各指标里完成率最低的是哪个",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "运营",
+      "完成率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_6"
+  },
+  {
+    "id": 37,
+    "question": "请假流程需要提前几天申请？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "original_7"
+  },
+  {
+    "id": 38,
+    "question": "请假需要提前几天提交？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_7"
+  },
+  {
+    "id": 39,
+    "question": "提前几天可以申请请假？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_7"
+  },
+  {
+    "id": 40,
+    "question": "请假要提前多少天呢？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_7"
+  },
+  {
+    "id": 41,
+    "question": "请事假需要提前几天？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_7"
+  },
+  {
+    "id": 42,
+    "question": "请假申请最晚什么时候提交？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假",
+      "申请"
+    ],
+    "reference_keywords": [
+      "天",
+      "提前"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_7"
+  },
+  {
+    "id": 43,
+    "question": "所有部门的异常率排名",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "original_8"
+  },
+  {
+    "id": 44,
+    "question": "所有部门的异常率情况如何",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_8"
+  },
+  {
+    "id": 45,
+    "question": "各个部门的异常率排名怎么样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_8"
+  },
+  {
+    "id": 46,
+    "question": "异常率最高的部门是哪些",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_8"
+  },
+  {
+    "id": 47,
+    "question": "各部门的异常率是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_8"
+  },
+  {
+    "id": 48,
+    "question": "上个月各部的异常率排名",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "部门",
+      "排名",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_8"
+  },
+  {
+    "id": 49,
+    "question": "客户等级怎么划分的？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "original_9"
+  },
+  {
+    "id": 50,
+    "question": "客户等级是如何划分的",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_9"
+  },
+  {
+    "id": 51,
+    "question": "客户等级是怎么分的",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_9"
+  },
+  {
+    "id": 52,
+    "question": "怎么区分客户等级",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_9"
+  },
+  {
+    "id": 53,
+    "question": "客户等级的分类标准是什么",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_9"
+  },
+  {
+    "id": 54,
+    "question": "客户等级有哪些级别",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户",
+      "等级"
+    ],
+    "reference_keywords": [
+      "等级",
+      "划分"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_9"
+  },
+  {
+    "id": 55,
+    "question": "张三这个月的销售业绩怎么样？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "original_10"
+  },
+  {
+    "id": 56,
+    "question": "张三这个月的销售额怎么样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "variant_of_10"
+  },
+  {
+    "id": 57,
+    "question": "张三上个月的销售数据如何",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "variant_of_10"
+  },
+  {
+    "id": 58,
+    "question": "11月份张三的业绩情况",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "variant_of_10"
+  },
+  {
+    "id": 59,
+    "question": "张三本月的销售表现怎样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "variant_of_10"
+  },
+  {
+    "id": 60,
+    "question": "销售那边张三的业绩是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "张三",
+      "销售",
+      "业绩"
+    ],
+    "category": "data_query",
+    "source": "variant_of_10"
+  },
+  {
+    "id": 61,
+    "question": "合同金额超过10万的客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "original_11"
+  },
+  {
+    "id": 62,
+    "question": "哪些客户的合同金额超过10万",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "variant_of_11"
+  },
+  {
+    "id": 63,
+    "question": "合同金额超过十万的客户有哪些",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "variant_of_11"
+  },
+  {
+    "id": 64,
+    "question": "客户合同金额超过10万的名单是什么",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "variant_of_11"
+  },
+  {
+    "id": 65,
+    "question": "有哪几个客户的合同金额超过了10万",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "variant_of_11"
+  },
+  {
+    "id": 66,
+    "question": "合同金额在十万元以上的是哪些客户",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "合同",
+      "客户",
+      "10万"
+    ],
+    "category": "data_query",
+    "source": "variant_of_11"
+  },
+  {
+    "id": 67,
+    "question": "KPI考核标准中运营指标的权重是多少？",
+    "expected_intent": "hybrid",
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "expected_tools": [],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "original_12"
+  },
+  {
+    "id": 68,
+    "question": "KPI考核里运营指标占多少分？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_12"
+  },
+  {
+    "id": 69,
+    "question": "运营指标在KPI中权重是多少？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_12"
+  },
+  {
+    "id": 70,
+    "question": "运营相关的考核占比有多少？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_12"
+  },
+  {
+    "id": 71,
+    "question": "KPI的运营部分怎么算权重？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_12"
+  },
+  {
+    "id": 72,
+    "question": "运营指标的比重是多少？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "KPI",
+      "考核",
+      "运营"
+    ],
+    "reference_keywords": [
+      "权重",
+      "KPI"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_12"
+  },
+  {
+    "id": 73,
+    "question": "销售部合同金额为什么被判定为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "original_13",
+    "expected_doc_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ]
+  },
+  {
+    "id": 74,
+    "question": "销售部的合同金额为什么异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "reference_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_13"
+  },
+  {
+    "id": 75,
+    "question": "为什么销售部的合同金额被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "reference_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_13"
+  },
+  {
+    "id": 76,
+    "question": "销售数据为什么出现异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "reference_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_13"
+  },
+  {
+    "id": 77,
+    "question": "销售业绩怎么被判定为异常的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "reference_keywords": [
+      "销售",
+      "合同",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_13"
+  },
+  {
+    "id": 78,
+    "question": "技术部和销售部的异常率对比",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "original_14"
+  },
+  {
+    "id": 79,
+    "question": "技术部和销售部的异常率哪个高",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_14"
+  },
+  {
+    "id": 80,
+    "question": "销售部门和技朮部门的异常情况对比",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_14"
+  },
+  {
+    "id": 81,
+    "question": "两个部门的异常率差异是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_14"
+  },
+  {
+    "id": 82,
+    "question": "销售与技术部门异常率对比分析",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_14"
+  },
+  {
+    "id": 83,
+    "question": "上个月销售和技朮的异常率怎么样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "对比",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "variant_of_14"
+  },
+  {
+    "id": 84,
+    "question": "员工离职需要办理什么手续？",
+    "expected_intent": "doc_query",
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "original_15"
+  },
+  {
+    "id": 85,
+    "question": "员工离职要走哪些流程",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_15"
+  },
+  {
+    "id": 86,
+    "question": "离职需要办哪些手续",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_15"
+  },
+  {
+    "id": 87,
+    "question": "员工辞职要怎么处理",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_15"
+  },
+  {
+    "id": 88,
+    "question": "离职时应该办理什么手续",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_15"
+  },
+  {
+    "id": 89,
+    "question": "员工离职该怎么做手续",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "离职",
+      "手续"
+    ],
+    "reference_keywords": [
+      "手续",
+      "离职"
+    ],
+    "category": "doc_query",
+    "source": "variant_of_15"
+  },
+  {
+    "id": 90,
+    "question": "最近一个月哪个部门数据质量最好？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "original_16"
+  },
+  {
+    "id": 91,
+    "question": "最近一个月哪个部门的数据最准确",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "variant_of_16"
+  },
+  {
+    "id": 92,
+    "question": "上个月各科室数据质量如何",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "variant_of_16"
+  },
+  {
+    "id": 93,
+    "question": "11月份哪个部门的数据表现最好",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "variant_of_16"
+  },
+  {
+    "id": 94,
+    "question": "销售部门的异常率是多少",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "variant_of_16"
+  },
+  {
+    "id": 95,
+    "question": "11月各团队数据质量怎么样",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "质量",
+      "部门",
+      "最好"
+    ],
+    "category": "data_query",
+    "source": "variant_of_16"
+  },
+  {
+    "id": 96,
+    "question": "客户跟进日期超过30天没更新的有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "original_17"
+  },
+  {
+    "id": 97,
+    "question": "哪些客户的跟进日期超过30天没有更新？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "variant_of_17"
+  },
+  {
+    "id": 98,
+    "question": "跟进日期超过30天没更新的客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "variant_of_17"
+  },
+  {
+    "id": 99,
+    "question": "超过30天没更新跟进的客户是哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "variant_of_17"
+  },
+  {
+    "id": 100,
+    "question": "30天没更新跟进的客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "variant_of_17"
+  },
+  {
+    "id": 101,
+    "question": "跟进日期超过30天未更新的客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_doc_keywords": [],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "30天"
+    ],
+    "category": "data_query",
+    "source": "variant_of_17"
+  },
+  {
+    "id": 102,
+    "question": "销售部为什么异常率比其他部门高？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "original_18",
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ]
+  },
+  {
+    "id": 103,
+    "question": "销售部门的异常率为什么比其他部门高",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_18"
+  },
+  {
+    "id": 104,
+    "question": "为什么销售部的异常率比其他部门高",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_18"
+  },
+  {
+    "id": 105,
+    "question": "销售那边的异常率比别的部门高吗",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_18"
+  },
+  {
+    "id": 106,
+    "question": "上个月销售异常率怎么样",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_18"
+  },
+  {
+    "id": 107,
+    "question": "销售数据异常率为什么这么高",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "销售",
+      "异常率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常率",
+      "对比"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_18"
+  },
+  {
+    "id": 108,
+    "question": "目标值没达到80%算不算异常？",
+    "expected_intent": "hybrid",
+    "expected_doc_keywords": [
+      "目标值",
+      "异常",
+      "考核"
+    ],
+    "expected_tools": [],
+    "reference_keywords": [
+      "80%",
+      "目标",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "original_19"
+  },
+  {
+    "id": 109,
+    "question": "目标值未达到80%是否算异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "目标值",
+      "异常",
+      "考核"
+    ],
+    "reference_keywords": [
+      "80%",
+      "目标",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_19"
+  },
+  {
+    "id": 110,
+    "question": "没达到80%的目标值是不是异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "目标值",
+      "异常",
+      "考核"
+    ],
+    "reference_keywords": [
+      "80%",
+      "目标",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_19"
+  },
+  {
+    "id": 111,
+    "question": "销售数据没到80%算不算异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "目标值",
+      "异常",
+      "考核"
+    ],
+    "reference_keywords": [
+      "80%",
+      "目标",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_19"
+  },
+  {
+    "id": 112,
+    "question": "业绩没过80%是什么情况？",
+    "expected_intent": "hybrid",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "目标值",
+      "异常",
+      "考核"
+    ],
+    "reference_keywords": [
+      "80%",
+      "目标",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "variant_of_19"
+  },
+  {
+    "id": 113,
+    "question": "hello world",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "original_20"
+  },
+  {
+    "id": 114,
+    "question": "你好世界",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "variant_of_20"
+  },
+  {
+    "id": 115,
+    "question": "世界你好",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "variant_of_20"
+  },
+  {
+    "id": 116,
+    "question": "你好，世界",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "variant_of_20"
+  },
+  {
+    "id": 117,
+    "question": "世上你好",
+    "expected_intent": "data_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "variant_of_20"
+  }
+]
