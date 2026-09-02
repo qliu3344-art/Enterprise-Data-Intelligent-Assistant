@@ -18,11 +18,13 @@ from sqlalchemy.orm import Session
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_community.chat_models.tongyi import ChatTongyi
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, RemoveMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.config import settings
 from app.logger import logger
+from app.services.context_manager import compress_history
+from app.services.memory_store import build_memory_message, save_memory
 
 # —— 全局 Checkpointer 单例 ——
 # 所有 Agent 实例共享同一个 checkpointer，通过 thread_id 隔离会话
@@ -410,6 +412,45 @@ def _json_to_text(raw: str) -> str:
     return _json.dumps(data, ensure_ascii=False, indent=2)
 
 
+def _apply_context_compression(agent, config: dict, question: str):
+    """三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩。
+
+    读历史 → 召回长期记忆 → 压缩历史（窗口+摘要）→ 覆盖写回 checkpointer，
+    防止多轮对话历史无限膨胀、稀释注意力。
+
+    Returns:
+        长期记忆 SystemMessage，无相关记忆时返回 None。
+    """
+    # 1. 读历史
+    try:
+        state = agent.get_state(config)
+    except Exception as e:
+        logger.warning(f"读取 checkpointer 历史失败: {e}")
+        state = None
+    history = list(state.values.get("messages", [])) if state and state.values else []
+
+    # 2. 长期记忆召回
+    memory_msg = build_memory_message(question)
+
+    # 3. 滑动窗口 + 摘要压缩
+    compressed = compress_history(history)
+
+    # 4. 覆盖写回 checkpointer（先删旧、再写压缩后，避免历史膨胀）
+    if history:
+        delete_msgs = [RemoveMessage(id=m.id) for m in history if getattr(m, "id", None)]
+        try:
+            agent.update_state(config, {"messages": delete_msgs})
+        except Exception as e:
+            logger.warning(f"清空 checkpointer 历史失败: {e}")
+    if compressed:
+        try:
+            agent.update_state(config, {"messages": compressed})
+        except Exception as e:
+            logger.warning(f"写回压缩历史失败: {e}")
+
+    return memory_msg
+
+
 def run_query(question: str, db: Session = None, thread_id: str = "default") -> dict:
     """执行一次自然语言数据查询。
 
@@ -425,10 +466,16 @@ def run_query(question: str, db: Session = None, thread_id: str = "default") -> 
     config = {"configurable": {"thread_id": thread_id}}
     try:
         agent = get_agent()
-        result = agent.invoke(
-            {"messages": [HumanMessage(content=question)]},
-            config=config,
-        )
+
+        # —— 三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩 ——
+        memory_msg = _apply_context_compression(agent, config, question)
+
+        input_messages = []
+        if memory_msg is not None:
+            input_messages.append(memory_msg)
+        input_messages.append(HumanMessage(content=question))
+
+        result = agent.invoke({"messages": input_messages}, config=config)
     except Exception as e:
         logger.error(f"Agent 执行失败: {e}")
         return {
@@ -462,6 +509,9 @@ def run_query(question: str, db: Session = None, thread_id: str = "default") -> 
     iterations = len(tools_used)
     logger.info(f"Agent 完成: iterations={iterations}, answer_len={len(answer)}")
 
+    # 沉淀长期记忆（用户关注点，供后续跨会话召回）
+    save_memory(thread_id, f"用户曾询问：{question}")
+
     return {
         "question": question,
         "answer": answer,
@@ -484,13 +534,21 @@ async def run_query_stream(question: str, thread_id: str = "default"):
     try:
         agent = get_agent()
 
+        # —— 三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩 ——
+        memory_msg = _apply_context_compression(agent, config, question)
+
         yield {"event": "agent_start", "data": {"question": question}}
 
         final_answer = ""
         tools_used = []
 
+        input_messages = []
+        if memory_msg is not None:
+            input_messages.append(memory_msg)
+        input_messages.append(HumanMessage(content=question))
+
         async for chunk in agent.astream(
-            {"messages": [HumanMessage(content=question)]},
+            {"messages": input_messages},
             config=config,
             stream_mode="updates",
         ):

@@ -211,6 +211,32 @@ def align_datasource_headers(source_id: int, db: Session = Depends(get_db)):
         }
 
 
+@router.post("/{source_id}/mapping/{mapping_id}/review", response_model=dict)
+def review_mapping(source_id: int, mapping_id: int, db: Session = Depends(get_db)):
+    """人工确认表头映射：将 manual_reviewed 标记为已复核。
+
+    低置信度（confidence < 0.7）的映射前端标红提示，人工核对后点确认，
+    本接口落地"人工确认"动作，把 final 决策权交给人。
+    """
+    mapping = (
+        db.query(SchemaMapping)
+        .filter(SchemaMapping.id == mapping_id, SchemaMapping.source_id == source_id)
+        .first()
+    )
+    if not mapping:
+        raise NotFoundException(f"映射不存在: id={mapping_id}")
+
+    mapping.manual_reviewed = 1
+    db.commit()
+
+    logger.info(f"表头映射已人工确认: source={source_id}, mapping={mapping_id}")
+    return {
+        "code": 200,
+        "message": "映射已人工确认",
+        "data": {"mapping_id": mapping_id, "manual_reviewed": True},
+    }
+
+
 @router.post("/upload", response_model=dict)
 async def upload_datasource_file(
     file: UploadFile = File(...),

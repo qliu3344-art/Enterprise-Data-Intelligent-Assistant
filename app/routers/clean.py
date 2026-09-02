@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.exceptions import NotFoundException
+from app.exceptions import NotFoundException, ValidationException
 from app.logger import logger
 from app.models.raw_record import RawRecord
 from app.models.cleaned_record import CleanedRecord
@@ -49,6 +49,13 @@ def trigger_clean(batch_id: str, db: Session = Depends(get_db)):
         .order_by(SchemaMapping.created_at.desc())
         .first()
     )
+
+    # 未确认拦截：LLM 映射存在但未人工确认，阻止直接清洗（人是最终决策者）
+    if mapping_record and mapping_record.manual_reviewed != 1:
+        raise ValidationException(
+            f"表头映射未人工确认（confidence={mapping_record.confidence}），"
+            f"请先在表头映射审核页确认后再清洗"
+        )
 
     # 4. 执行清洗
     context = {

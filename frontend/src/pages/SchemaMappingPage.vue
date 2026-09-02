@@ -18,6 +18,9 @@ const mappingResult = shallowRef<{
   confidence: number
 } | null>(null)
 const headers = shallowRef<string[]>([])
+const mappingId = shallowRef<number | null>(null)
+const reviewed = shallowRef(false)
+const reviewLoading = shallowRef(false)
 
 const FIELD_LABELS: Record<string, string> = {
   employee_name: '员工姓名', employee_id: '工号', department: '部门',
@@ -42,6 +45,8 @@ async function handleAlign() {
         unmapped: data.unmapped,
         confidence: data.confidence,
       }
+      mappingId.value = data.mapping_id ?? null
+      reviewed.value = false
       headers.value = data.headers || []
       ElMessage.success(`LLM 对齐完成！置信度 ${(data.confidence * 100).toFixed(0)}%`)
     } else {
@@ -51,6 +56,20 @@ async function handleAlign() {
     ElMessage.error(e.message || '对齐失败')
   } finally {
     mappingLoading.value = false
+  }
+}
+
+async function handleReview() {
+  if (!mappingId.value) return
+  reviewLoading.value = true
+  try {
+    await datasourceApi.review(id, mappingId.value)
+    reviewed.value = true
+    ElMessage.success('映射已人工确认')
+  } catch (e: any) {
+    ElMessage.error(e.message || '确认失败')
+  } finally {
+    reviewLoading.value = false
   }
 }
 
@@ -150,6 +169,22 @@ onMounted(() => fetch(id))
           <el-empty v-else description="全部字段已成功映射 🎉" :image-size="40" />
         </el-card>
       </div>
+
+      <!-- 人工确认 -->
+      <el-card class="mt-4">
+        <div class="flex items-center justify-between">
+          <div v-if="reviewed" class="text-green-600 font-semibold">✅ 已人工确认</div>
+          <div v-else class="text-gray-500 text-sm">映射结果仅供参考，请人工核对后确认</div>
+          <el-button
+            type="success"
+            :loading="reviewLoading"
+            :disabled="reviewed"
+            @click="handleReview"
+          >
+            {{ reviewed ? '已确认' : '确认映射' }}
+          </el-button>
+        </div>
+      </el-card>
     </template>
   </div>
 </template>

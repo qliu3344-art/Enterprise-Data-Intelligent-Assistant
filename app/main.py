@@ -66,7 +66,7 @@ def on_startup():
 
 
 # —— 路由注册 ——
-from app.routers import datasource, collect, clean, analysis, query, rag
+from app.routers import datasource, collect, clean, analysis, query, rag, feedback
 
 app.include_router(datasource.router, prefix="/api/v1")
 app.include_router(collect.router, prefix="/api/v1")
@@ -74,6 +74,7 @@ app.include_router(clean.router, prefix="/api/v1")
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(query.router, prefix="/api/v1")
 app.include_router(rag.router, prefix="/api/v1")
+app.include_router(feedback.router, prefix="/api/v1")
 
 # 生产环境挂载前端 dist（SPA fallback 模式）
 import os

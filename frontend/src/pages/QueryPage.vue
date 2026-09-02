@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { shallowRef, nextTick, ref } from 'vue'
-import { ElMessage, ElTag } from 'element-plus'
+import { shallowRef, nextTick, ref, reactive } from 'vue'
+import { ElMessage, ElTag, ElMessageBox } from 'element-plus'
 import { queryApi } from '@/api/query'
 import type { QueryResult, RAGSource } from '@/api/query'
+import { feedbackApi } from '@/api/feedback'
 import { Promotion } from '@element-plus/icons-vue'
 
 const question = shallowRef('')
@@ -78,6 +79,34 @@ function getToolNames(tools: string[]): string {
 function formatAnswer(text: string): string {
   // Clean markdown code blocks
   return text.replace(/```json|```/g, '').trim()
+}
+
+// 反馈状态：question → 'up' | 'down'（防重复提交）
+const feedbackMap = reactive<Record<string, 'up' | 'down'>>({})
+
+async function handleFeedback(q: string, rating: 1 | -1) {
+  if (feedbackMap[q]) return
+  let comment = ''
+  if (rating === -1) {
+    try {
+      const { value } = await ElMessageBox.prompt('哪里答得不好？（可选，帮助我们改进）', '反馈', {
+        confirmButtonText: '提交',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputPlaceholder: '比如：没解释判定标准 / 数据不对',
+      })
+      comment = value || ''
+    } catch {
+      return // 用户取消
+    }
+  }
+  try {
+    await feedbackApi.submit({ question: q, rating, comment })
+    feedbackMap[q] = rating === 1 ? 'up' : 'down'
+    ElMessage.success('感谢反馈')
+  } catch (e: any) {
+    ElMessage.error(e.message || '反馈失败')
+  }
 }
 </script>
 
@@ -184,6 +213,20 @@ function formatAnswer(text: string): string {
                 <template v-if="item.result.mode === 'rag' || item.result.rag_data">
                   <span>检索到 {{ item.result.rag_data?.chunks_count ?? item.result.chunks_count ?? 0 }} 个相关条款</span>
                 </template>
+              </div>
+
+              <!-- 反馈 -->
+              <div class="feedback-bar">
+                <button
+                  class="fb-btn"
+                  :class="{ active: feedbackMap[item.q] === 'up' }"
+                  @click="handleFeedback(item.q, 1)"
+                >👍 有用</button>
+                <button
+                  class="fb-btn"
+                  :class="{ active: feedbackMap[item.q] === 'down' }"
+                  @click="handleFeedback(item.q, -1)"
+                >👎 没用</button>
               </div>
             </div>
           </div>
@@ -491,6 +534,35 @@ function formatAnswer(text: string): string {
   font-size: 11px;
   color: #c0c4cc;
   padding-left: 4px;
+}
+
+.feedback-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 2px;
+}
+
+.fb-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 14px;
+  background: #fff;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fb-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.fb-btn.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: #fff;
 }
 
 .dot-pulse::after {

@@ -86,10 +86,10 @@ def _fallback_classify(raw_text: str) -> dict:
     has_data = bool(re.search(r'\bdata_query\b|\bdata\b', text))
 
     if has_hybrid:
-        return {"intent": "hybrid", "confidence": 0.5}
+        return {"intent": "hybrid", "confidence": 0.6}
     elif has_doc:
-        return {"intent": "doc_query", "confidence": 0.5}
+        return {"intent": "doc_query", "confidence": 0.6}
     elif has_data:
-        return {"intent": "data_query", "confidence": 0.5}
+        return {"intent": "data_query", "confidence": 0.6}
     else:
         return {"intent": "data_query", "confidence": 0.3}

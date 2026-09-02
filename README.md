@@ -6,10 +6,11 @@
 
 - **多源数据采集** — 统一的 Connector 抽象层，一键接入 Excel、CSV、MySQL、PDF 四种数据源
 - **PDF 智能提取** — 通义千问大模型将非结构化 PDF 报表自动转换为结构化表格
-- **异构表头对齐** — LLM 语义匹配，自动将不同部门的表头命名映射到统一标准字段
+- **异构表头对齐** — LLM 语义匹配 + 置信度评分，低置信度标红人工确认，未确认的映射清洗时拦截
 - **数据清洗 Pipeline** — 去重 → 缺失值填充 → IQR 统计初筛 + LLM 业务异常判定（LLM 失败自动降级为待人工审核），三步流水线
-- **自然语言智能查询** — 用中文提问（"销售部 11 月异常率多少？"），Agent 自动理解意图、执行查询、解释结果
+- **自然语言智能查询** — 用中文提问（"销售部 11 月异常率多少？"），LLM 意图分类 + 关键词兜底 + 低置信度自动降级 hybrid 双引擎，Agent 执行查询、解释结果
 - **RAG 制度文档问答** — BGE 向量化 + BM25 混合检索 + 引用溯源，让 AI 基于企业内部文档回答制度问题
+- **多轮对话上下文压缩** — 滑动窗口保留最近原文 + LLM 摘要压缩旧历史 + 长期记忆向量库按需召回，短中长三级防止上下文溢出
 - **LLM 调用容错** — 指数退避重试 + 可重试/不可重试分类，异常判定 LLM 失败自动降级为待人工审核
 - **可观测性 Trace** — 每次查询落 `query_trace` 结构化记录（意图/工具/耗时），支撑 badcase 归因
 - **可视化分析报表** — 数据质量报告、趋势分析、异常审核，支持 Excel 导出
@@ -96,7 +97,7 @@ npm run build     # 构建到 app/static/，由后端 serve
 
 ```
 用户提问（自然语言）
-  → Intent Router（LLM 分类：查数据 / 查文档 / 混合）
+  → Intent Router（LLM 分类：查数据 / 查文档 / 混合，低置信度兜底 hybrid）
     ├─ data_query → LangChain ReAct Agent → SQL 查询 → 数据回答
     ├─ doc_query  → RAG Pipeline → 混合检索 → 引用溯源回答
     └─ hybrid     → 双引擎并行 → LLM 合成统一答案（SSE 流式返回）
@@ -134,6 +135,8 @@ npm run build     # 构建到 app/static/，由后端 serve
 │       ├── analyzer.py      # 多维度分析
 │       ├── intent_router.py # LLM 意图分类
 │       ├── query_agent.py   # LangChain ReAct Agent
+│       ├── context_manager.py # 多轮对话上下文压缩（滑动窗口+摘要）
+│       ├── memory_store.py    # 长期记忆向量库
 │       └── rag/             # RAG 管线（加载/切分/向量化/检索/生成）
 ├── frontend/                # Vue 3 SPA
 ├── scripts/                 # 初始化、模拟数据、测试脚本
