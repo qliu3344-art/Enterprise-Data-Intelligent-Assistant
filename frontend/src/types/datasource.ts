@@ -59,3 +59,8 @@ export interface AlignResult {
   message?: string
   mapping_id?: number
 }
+
+export interface ReviewResult {
+  mapping_id: number
+  manual_reviewed: boolean
+}

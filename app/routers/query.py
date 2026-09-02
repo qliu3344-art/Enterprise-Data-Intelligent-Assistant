@@ -22,6 +22,10 @@ from app.services.rag.service import ask_rag
 
 router = APIRouter(prefix="/query", tags=["自然语言查询"])
 
+# 意图置信度阈值：低于此值判定意图不可靠，强制走 hybrid 双引擎安全网（宁可多查不漏）
+# 设为 0.6 而非 0.5：LLM 自评置信度普遍偏高约 0.1，阈值上移对冲，避免边界样本（真实 0.45 左右）被偏高推过线误走单引擎
+INTENT_CONFIDENCE_THRESHOLD = 0.6
+
 # —— 融合 Prompt ——
 FUSION_PROMPT = """你是一个专业的企业数据分析师。请综合以下两部分信息，回答用户问题。
 
@@ -166,8 +170,17 @@ async def natural_language_query(body: QueryRequest, db: Session = Depends(get_d
     # 1. 意图分类
     intent_result = classify_intent(body.question)
     intent = intent_result["intent"]
+    confidence = intent_result.get("confidence", 0.0)
 
-    # 2. 按意图路由
+    # 2. 低置信度兜底：信心不足时强制走 hybrid 双引擎，宁可多查不漏
+    if confidence < INTENT_CONFIDENCE_THRESHOLD and intent != "hybrid":
+        logger.info(
+            f"意图 {intent} 置信度 {confidence:.2f} 低于阈值 "
+            f"{INTENT_CONFIDENCE_THRESHOLD}，降级为 hybrid"
+        )
+        intent = "hybrid"
+
+    # 3. 按意图路由
     if intent == "doc_query":
         result = ask_rag(body.question)
         result["mode"] = "rag"
@@ -297,6 +310,16 @@ async def natural_language_query_stream(
             # 1. 意图分类
             intent_result = classify_intent(body.question)
             intent = intent_result["intent"]
+            confidence = intent_result.get("confidence", 0.0)
+
+            # 2. 低置信度兜底：信心不足时强制走 hybrid 双引擎
+            if confidence < INTENT_CONFIDENCE_THRESHOLD and intent != "hybrid":
+                logger.info(
+                    f"意图 {intent} 置信度 {confidence:.2f} 低于阈值 "
+                    f"{INTENT_CONFIDENCE_THRESHOLD}，降级为 hybrid"
+                )
+                intent = "hybrid"
+
             yield _sse("intent", {"intent": intent})
 
             if intent == "data_query":

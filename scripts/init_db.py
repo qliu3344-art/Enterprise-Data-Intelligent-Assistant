@@ -19,6 +19,7 @@ from app.models import (  # noqa: F401
     PipelineLog,
     ChatHistory,
     QueryTrace,
+    Feedback,
 )
 
 
@@ -50,6 +51,7 @@ def init():
     print("  - pipeline_logs")
     print("  - chat_history")
     print("  - query_trace")
+    print("  - feedback")
 
 
 if __name__ == "__main__":

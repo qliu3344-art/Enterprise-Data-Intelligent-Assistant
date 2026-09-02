@@ -1,6 +1,6 @@
 import client from './client'
 import type { APIResponse, PaginatedData } from '@/types/common'
-import type { DataSourceItem, DataSourceForm, UploadResult, TestResult, AlignResult } from '@/types/datasource'
+import type { DataSourceItem, DataSourceForm, UploadResult, TestResult, AlignResult, ReviewResult } from '@/types/datasource'
 
 export const datasourceApi = {
   list(page = 1, pageSize = 20, sourceType = '') {
@@ -39,5 +39,11 @@ export const datasourceApi = {
 
   align(id: number) {
     return client.post<APIResponse<AlignResult>>(`/datasources/${id}/align`)
+  },
+
+  review(sourceId: number, mappingId: number) {
+    return client.post<APIResponse<ReviewResult>>(
+      `/datasources/${sourceId}/mapping/${mappingId}/review`,
+    )
   },
 }
