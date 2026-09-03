@@ -24,7 +24,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.config import settings
 from app.logger import logger
 from app.services.context_manager import compress_history
-from app.services.memory_store import build_memory_message, save_memory
+from app.services.memory_store import (
+    build_convention_message,
+    extract_conventions,
+    save_convention,
+)
 
 # —— 全局 Checkpointer 单例 ——
 # 所有 Agent 实例共享同一个 checkpointer，通过 thread_id 隔离会话
@@ -430,7 +434,7 @@ def _apply_context_compression(agent, config: dict, question: str):
     history = list(state.values.get("messages", [])) if state and state.values else []
 
     # 2. 长期记忆召回
-    memory_msg = build_memory_message(question)
+    memory_msg = build_convention_message(question)
 
     # 3. 滑动窗口 + 摘要压缩
     compressed = compress_history(history)
@@ -509,8 +513,9 @@ def run_query(question: str, db: Session = None, thread_id: str = "default") -> 
     iterations = len(tools_used)
     logger.info(f"Agent 完成: iterations={iterations}, answer_len={len(answer)}")
 
-    # 沉淀长期记忆（用户关注点，供后续跨会话召回）
-    save_memory(thread_id, f"用户曾询问：{question}")
+    # 沉淀业务口径（用户交代过的规则/定义，供后续跨会话遵循）
+    for convention in extract_conventions(question, answer):
+        save_convention(convention)
 
     return {
         "question": question,
