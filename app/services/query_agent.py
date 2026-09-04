@@ -44,12 +44,15 @@ def _create_checkpointer():
     data_dir.mkdir(exist_ok=True)
 
     try:
+        import sqlite3
+
         from langgraph.checkpoint.sqlite import SqliteSaver
         db_path = str(data_dir / "agent_checkpoints.db")
+        conn = sqlite3.connect(db_path, check_same_thread=False)
         logger.info(f"使用 SqliteSaver: {db_path}")
-        return SqliteSaver.from_conn_string(db_path)
+        return SqliteSaver(conn)
     except ImportError:
-        logger.warning("SqliteSaver 不可用（pip install aiosqlite），回退 MemorySaver")
+        logger.warning("SqliteSaver 不可用（pip install langgraph-checkpoint-sqlite），回退 MemorySaver")
         return MemorySaver()
 
 _checkpointer = _create_checkpointer()
