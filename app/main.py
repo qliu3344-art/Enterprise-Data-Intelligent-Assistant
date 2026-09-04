@@ -52,13 +52,12 @@ def health_check():
 def on_startup():
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} 启动成功")
 
-    # 自动初始化 RAG 索引（如果文档有更新）
+    # 自动初始化 RAG 索引（per-document 增量，只重算变化的文档）
     try:
-        from app.services.rag.vector_store import index_all, needs_reindex
-        if needs_reindex():
-            logger.info("检测到文档变更，自动重建 RAG 索引...")
-            result = index_all(force=True)
-            logger.info(f"RAG 索引完成: {result['documents']} 文档 → {result['chunks']} chunks")
+        from app.services.rag.vector_store import index_all
+        result = index_all()
+        if result["reindexed"]:
+            logger.info(f"RAG 索引更新完成: {result['documents']} 文档 → {result['chunks']} chunks")
         else:
             logger.info("RAG 索引已是最新，跳过重建")
     except Exception as e:

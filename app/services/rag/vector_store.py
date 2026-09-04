@@ -5,6 +5,7 @@
 """
 
 import hashlib
+import json
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -50,12 +51,14 @@ def get_collection():
     return _collection
 
 
-def _compute_docs_checksum(documents) -> str:
-    """计算所有文档内容的 checksum，用于判断是否需要重建索引。"""
-    hasher = hashlib.md5()
-    for doc in sorted(documents, key=lambda d: d.file_name):
-        hasher.update(doc.content.encode("utf-8"))
-    return hasher.hexdigest()
+def _compute_doc_checksum(content: str) -> str:
+    """单份文档内容的 md5 指纹。"""
+    return hashlib.md5(content.encode("utf-8")).hexdigest()
+
+
+def _compute_docs_checksums(documents) -> dict:
+    """计算所有文档的 {file_name: md5} 映射。"""
+    return {doc.file_name: _compute_doc_checksum(doc.content) for doc in documents}
 
 
 def _checksum_path() -> Path:
@@ -63,90 +66,151 @@ def _checksum_path() -> Path:
     return CHROMA_PATH / ".docs_checksum"
 
 
+def _load_stored_checksums() -> dict:
+    """加载已持久化的 per-document checksum 映射。
+
+    兼容旧版本：旧版存的是全局 md5 字符串，非 dict 一律视为空，
+    触发一次全量重建以迁移到新格式。
+    """
+    path = _checksum_path()
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _save_checksums(checksums: dict) -> None:
+    """持久化 per-document checksum 映射。"""
+    os.makedirs(str(CHROMA_PATH), exist_ok=True)
+    _checksum_path().write_text(
+        json.dumps(checksums, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
 def needs_reindex() -> bool:
-    """检查文档是否发生了变更，需要重建索引。"""
+    """检查是否有文档新增、删除或内容变更（per-document 比对）。"""
     documents = load_all_documents()
     if not documents:
         return False
-
-    current_checksum = _compute_docs_checksum(documents)
-    checksum_file = _checksum_path()
-
-    if not checksum_file.exists():
-        return True
-
-    stored = checksum_file.read_text().strip()
-    return stored != current_checksum
+    current = _compute_docs_checksums(documents)
+    stored = _load_stored_checksums()
+    return current != stored
 
 
-def index_all(force: bool = False) -> dict:
-    """加载文档 → 分块 → 向量化 → 存入 ChromaDB。
+def _chunk_id(file_name: str, chunk_index: int) -> str:
+    """生成稳定的 chunk 唯一 ID（file_name + 文档内序号），增量写入不撞车。"""
+    return f"{file_name}#{chunk_index}"
 
-    Args:
-        force: 是否强制重建索引（即使文档未变更）
 
-    Returns:
-        {"documents": int, "chunks": int, "reindexed": bool}
-    """
-    documents = load_all_documents()
-    if not documents:
-        return {"documents": 0, "chunks": 0, "reindexed": False}
+def _chunk_metadata(c: Chunk) -> dict:
+    """构建 chunk 的 ChromaDB metadata。"""
+    return {
+        "doc_title": c.doc_title,
+        "file_name": c.file_name,
+        "chapter": c.chapter[:200] if c.chapter else "",
+        "section": c.section[:200] if c.section else "",
+    }
 
-    current_checksum = _compute_docs_checksum(documents)
 
-    if not force and not needs_reindex():
-        collection = get_collection()
-        count = collection.count()
-        logger.info(f"文档未变更，跳过索引（已有 {count} 个向量）")
-        return {"documents": len(documents), "chunks": count, "reindexed": False}
-
-    logger.info("开始重建索引...")
-
-    # 分块
-    chunks = chunk_all(documents)
-    logger.info(f"共 {len(chunks)} 个 chunks，开始向量化...")
-
-    # 向量化
-    texts = [c.text for c in chunks]
-    embeddings = embed_documents(texts)
-
-    # 存入 ChromaDB — 先清空旧数据（保留 collection 避免窗口期）
-    collection = get_collection()
-
-    # 获取并删除所有已有向量（不删除 collection，中间查询返回空而非报错）
+def _clear_collection(collection) -> None:
+    """清空 collection 中所有向量（保留 collection，避免窗口期查询报错）。"""
     existing = collection.get()
     if existing and existing.get("ids"):
         collection.delete(ids=existing["ids"])
         logger.info(f"已清空 {len(existing['ids'])} 条旧向量")
 
-    ids = [f"chunk_{i}" for i in range(len(chunks))]
-    metadatas = [
-        {
-            "doc_title": c.doc_title,
-            "file_name": c.file_name,
-            "chapter": c.chapter[:200] if c.chapter else "",
-            "section": c.section[:200] if c.section else "",
-        }
-        for c in chunks
-    ]
 
-    # 分批写入
+def _index_documents(collection, documents) -> int:
+    """分块 + 向量化 + 写入，返回写入的 chunk 数。"""
+    chunks = chunk_all(documents)
+    texts = [c.text for c in chunks]
+    embeddings = embed_documents(texts)
+
     batch_size = 50
-    for i in range(0, len(ids), batch_size):
-        end = min(i + batch_size, len(ids))
+    for i in range(0, len(chunks), batch_size):
+        end = min(i + batch_size, len(chunks))
+        batch = chunks[i:end]
         collection.add(
-            ids=ids[i:end],
+            ids=[_chunk_id(c.file_name, c.chunk_index) for c in batch],
             embeddings=embeddings[i:end],
-            documents=texts[i:end],
-            metadatas=metadatas[i:end],
+            documents=[c.text for c in batch],
+            metadatas=[_chunk_metadata(c) for c in batch],
         )
+    return len(chunks)
 
-    # 保存 checksum
-    os.makedirs(str(CHROMA_PATH), exist_ok=True)
-    _checksum_path().write_text(current_checksum)
 
-    logger.info(f"索引完成: {len(documents)} 份文档 → {len(chunks)} chunks")
-    return {"documents": len(documents), "chunks": len(chunks), "reindexed": True}
+def index_all(force: bool = False) -> dict:
+    """加载文档 → 分块 → 向量化 → 写入 ChromaDB。
+
+    force=False：per-document 增量——只重算新增/变更的文档、删除已移除的文档，
+                 未变更的零成本跳过。
+    force=True：全量重建（清空后重算所有文档）。
+
+    Returns:
+        {"documents", "chunks", "reindexed", "added", "updated", "removed"}
+    """
+    documents = load_all_documents()
+    if not documents:
+        return {"documents": 0, "chunks": 0, "reindexed": False,
+                "added": 0, "updated": 0, "removed": 0}
+
+    current = _compute_docs_checksums(documents)
+    stored = _load_stored_checksums()
+    collection = get_collection()
+
+    # —— 全量重建：force=True，或首次迁移（旧全局 md5 格式 → 无法 diff）——
+    if force or (not stored and collection.count() > 0):
+        _clear_collection(collection)
+        count = _index_documents(collection, documents)
+        _save_checksums(current)
+        logger.info(f"全量索引完成: {len(documents)} 份文档 → {count} chunks")
+        return {"documents": len(documents), "chunks": count, "reindexed": True,
+                "added": len(documents), "updated": 0, "removed": 0}
+
+    # —— 无变更，跳过 ——
+    if current == stored:
+        count = collection.count()
+        logger.info(f"文档未变更，跳过索引（已有 {count} 个向量）")
+        return {"documents": len(documents), "chunks": count, "reindexed": False,
+                "added": 0, "updated": 0, "removed": 0}
+
+    # —— per-document 增量 ——
+    added = [name for name in current if name not in stored]
+    removed = [name for name in stored if name not in current]
+    updated = [name for name in current if name in stored and current[name] != stored[name]]
+
+    # 删除已移除文档的旧向量
+    for name in removed:
+        collection.delete(where={"file_name": name})
+        logger.info(f"已删除移除文档的向量: {name}")
+
+    # 变更文档：先删旧向量，再重新写入
+    for name in updated:
+        collection.delete(where={"file_name": name})
+        logger.info(f"已删除变更文档的旧向量: {name}")
+
+    to_reindex = added + updated
+    changed_docs = [d for d in documents if d.file_name in to_reindex]
+    _index_documents(collection, changed_docs)
+
+    _save_checksums(current)
+
+    logger.info(
+        f"增量索引完成: 新增 {len(added)} / 更新 {len(updated)} / 删除 {len(removed)}，"
+        f"当前 {collection.count()} 个向量"
+    )
+    return {
+        "documents": len(documents),
+        "chunks": collection.count(),
+        "reindexed": True,
+        "added": len(added),
+        "updated": len(updated),
+        "removed": len(removed),
+    }
 
 
 def search(query_embedding: List[float], top_k: int = 20) -> list[dict]:
