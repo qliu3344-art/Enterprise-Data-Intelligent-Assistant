@@ -32,13 +32,14 @@ def rag_ask(body: AskRequest):
 
 
 @router.post("/reindex")
-def rag_reindex():
-    """重新索引所有制度文档（文档更新后调用）。
+def rag_reindex(force: bool = False):
+    """重新索引制度文档（文档更新后调用）。
 
-    流程：加载文档 → 语义分块 → 向量化 → 存入 ChromaDB
+    force=False：per-document 增量，只重算变化的文档。
+    force=True：全量重建（清空后重算所有文档）。
     """
-    logger.info("收到重新索引请求")
-    result = index_all(force=True)
+    logger.info(f"收到重新索引请求 (force={force})")
+    result = index_all(force=force)
     refresh_retriever()
     return {"code": 200, "message": "ok", "data": result}
 
