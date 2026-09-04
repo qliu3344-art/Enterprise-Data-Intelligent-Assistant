@@ -15,6 +15,7 @@ data/uploads/*
 data/exports/*
 !data/uploads/.gitkeep
 !data/exports/.gitkeep
+data/agent_checkpoints.db*
 
 # 日志
 logs/*.log
