@@ -19,33 +19,14 @@ from app.database import get_db
 from app.logger import logger
 from app.services.intent_router import classify_intent
 from app.services.rag.service import ask_rag
+from app.services.skills.hybrid import _fuse_hybrid_answer
+from app.services.skills.registry import get_skill
 
 router = APIRouter(prefix="/query", tags=["自然语言查询"])
 
 # 意图置信度阈值：低于此值判定意图不可靠，强制走 hybrid 双引擎安全网（宁可多查不漏）
 # 设为 0.6 而非 0.5：LLM 自评置信度普遍偏高约 0.1，阈值上移对冲，避免边界样本（真实 0.45 左右）被偏高推过线误走单引擎
 INTENT_CONFIDENCE_THRESHOLD = 0.6
-
-# —— 融合 Prompt ——
-FUSION_PROMPT = """你是一个专业的企业数据分析师。请综合以下两部分信息，回答用户问题。
-
-## 数据库查询结果（结构化数据）
-{agent_answer}
-
-## 相关制度文档条款（公司政策和规定）
-{rag_chunks}
-
-## 回答要求
-1. 先给出数据事实（具体数字），再结合制度条款解释原因
-2. 用中文自然语言表达，清晰流畅，4-10 句话
-3. 数据部分要精确引用数字，制度部分引用具体条款编号（如"第X条第X款"）
-4. 如果数据结果与制度规定有关联（阈值/规则等），明确指出
-5. 如果某部分信息缺失，诚实说明
-
-## 用户问题
-{question}
-
-请回答："""
 
 
 class QueryRequest(BaseModel):
@@ -57,58 +38,6 @@ class QueryRequest(BaseModel):
         max_length=64,
         description="会话标识。同一会话传入相同 session_id 可保持多轮对话上下文。留空则每次独立查询。",
     )
-
-
-def _fuse_hybrid_answer(
-    question: str, agent_answer: str, rag_answer: str, rag_chunks: list[dict]
-) -> str:
-    """用 LLM 将 Agent 数据结果和 RAG 制度条款融合为统一自然语言回答。
-
-    关键策略：不依赖 RAG 的 LLM 回答（可能会说"未找到关于这个人的信息"），
-    而是直接用检索到的原始制度 chunks 作为融合上下文。
-    """
-    from langchain_community.chat_models.tongyi import ChatTongyi
-    from langchain_core.messages import HumanMessage
-
-    from app.config import settings
-
-    # 构建 chunks 上下文（sources 是扁平结构，含 text/doc_title/chapter）
-    if rag_chunks:
-        chunks_text_parts = []
-        for i, chunk in enumerate(rag_chunks[:5], 1):
-            header = f"[条款{i}] 《{chunk.get('doc_title', '')}》"
-            if chunk.get("chapter"):
-                header += f" — {chunk['chapter']}"
-            chunks_text_parts.append(f"{header}\n{chunk.get('text', '')}")
-        chunks_text = "\n\n".join(chunks_text_parts)
-    else:
-        chunks_text = "（未检索到相关制度条款）"
-
-    # 如果没有检索到制度条款，直接返回 Agent 答案
-    if not rag_chunks:
-        return agent_answer
-
-    prompt = FUSION_PROMPT.format(
-        agent_answer=agent_answer[:2000],
-        rag_chunks=chunks_text[:2500],
-        question=question,
-    )
-
-    try:
-        llm = ChatTongyi(
-            model=settings.LLM_MODEL,
-            dashscope_api_key=settings.DASHSCOPE_API_KEY,
-            temperature=0.1,
-            max_tokens=800,
-        )
-        response = llm.invoke([HumanMessage(content=prompt)])
-        return response.content
-    except Exception as e:
-        logger.error(f"融合回答生成失败: {e}")
-        # 降级：数据结果 + RAG 回答拼合
-        if rag_answer and "未找到" not in rag_answer:
-            return f"{agent_answer}\n\n📋 制度依据：\n{rag_answer}"
-        return agent_answer
 
 
 def _save_trace(
@@ -180,77 +109,47 @@ async def natural_language_query(body: QueryRequest, db: Session = Depends(get_d
         )
         intent = "hybrid"
 
-    # 3. 按意图路由
-    if intent == "doc_query":
-        result = ask_rag(body.question)
-        result["mode"] = "rag"
-        result["intent"] = intent
-        _save_trace(db, thread_id, body.question, result["answer"], intent, "rag", t0)
-        return {"code": 200, "message": "ok", "data": result}
+    # 3. 按意图路由：查 Skill 注册表，按需调度对应能力（新增能力只需注册，不改路由）
+    skill = get_skill(intent)
+    result = await skill.handler(body.question, thread_id)
 
-    elif intent == "hybrid":
-        # 并行调用 Agent + RAG（asyncio 协程并发，无需线程池）
-        agent_task = asyncio.create_task(
-            _collect_agent_stream(body.question, thread_id)
-        )
-        rag_result = await asyncio.to_thread(ask_rag, body.question)
+    _save_trace(
+        db, thread_id, body.question, result.answer, intent, result.mode, t0,
+        result.iterations, result.tools_used,
+    )
 
-        _, agent_answer, iterations, tools_used = await agent_task
-        rag_answer = rag_result.get("answer", "")
-        rag_sources = rag_result.get("sources", [])
-
-        final_answer = await asyncio.to_thread(
-            _fuse_hybrid_answer,
-            body.question,
-            agent_answer,
-            rag_answer,
-            rag_sources,
-        )
-
-        _save_trace(
-            db, thread_id, body.question, final_answer, intent, "hybrid", t0,
-            iterations, tools_used,
-        )
-
-        return {
-            "code": 200,
-            "message": "ok",
-            "data": {
-                "question": body.question,
-                "answer": final_answer,
-                "mode": "hybrid",
-                "intent": intent,
-                "agent_data": {
-                    "iterations": iterations,
-                    "tools_used": tools_used,
-                },
-                "rag_data": {
-                    "chunks_count": rag_result.get("chunks_count", 0),
-                    "sources": rag_sources,
-                },
+    # 按 mode 组装 API 响应（保持原有字段契约不变）
+    if result.mode == "rag":
+        data = {
+            "answer": result.answer,
+            "sources": result.extra.get("sources", []),
+            "chunks_count": result.extra.get("chunks_count", 0),
+            "mode": "rag",
+            "intent": intent,
+        }
+    elif result.mode == "hybrid":
+        data = {
+            "question": body.question,
+            "answer": result.answer,
+            "mode": "hybrid",
+            "intent": intent,
+            "agent_data": {
+                "iterations": result.iterations,
+                "tools_used": result.tools_used,
             },
+            "rag_data": result.extra.get("rag_data", {}),
+        }
+    else:  # agent
+        data = {
+            "question": body.question,
+            "answer": result.answer,
+            "mode": "agent",
+            "intent": intent,
+            "iterations": result.iterations,
+            "tools_used": result.tools_used,
         }
 
-    else:
-        _, answer, iterations, tools_used = await _collect_agent_stream(
-            body.question, thread_id
-        )
-        _save_trace(
-            db, thread_id, body.question, answer, intent, "agent", t0,
-            iterations, tools_used,
-        )
-        return {
-            "code": 200,
-            "message": "ok",
-            "data": {
-                "question": body.question,
-                "answer": answer,
-                "mode": "agent",
-                "intent": intent,
-                "iterations": iterations,
-                "tools_used": tools_used,
-            },
-        }
+    return {"code": 200, "message": "ok", "data": data}
 
 
 # —— SSE 格式化 ——
@@ -259,7 +158,7 @@ def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-async def _collect_agent_stream(question: str, thread_id: str = "default") -> tuple[list, str, int, list]:
+async def _collect_agent_stream(question: str, thread_id: str = "default", intent: str = "data_query") -> tuple[list, str, int, list]:
     """收集 Agent 流式事件，返回 (中间事件列表, 最终答案, iterations, tools_used)。"""
     from app.services.query_agent import run_query_stream
 
@@ -267,7 +166,7 @@ async def _collect_agent_stream(question: str, thread_id: str = "default") -> tu
     final_answer = ""
     iterations = 0
     tools_used = []
-    async for evt in run_query_stream(question, thread_id):
+    async for evt in run_query_stream(question, thread_id, intent=intent):
         if evt["event"] == "answer":
             final_answer = evt["data"].get("content", "")
             iterations = evt["data"].get("iterations", 0)
@@ -323,7 +222,7 @@ async def natural_language_query_stream(
             yield _sse("intent", {"intent": intent})
 
             if intent == "data_query":
-                async for evt in run_query_stream(body.question, thread_id):
+                async for evt in run_query_stream(body.question, thread_id, intent=intent):
                     if evt["event"] == "done":
                         break
                     yield _sse(evt["event"], evt["data"])
@@ -343,7 +242,7 @@ async def natural_language_query_stream(
             else:  # hybrid
                 # 并行：Agent 流式 + RAG
                 agent_task = asyncio.create_task(
-                    _collect_agent_stream(body.question, thread_id)
+                    _collect_agent_stream(body.question, thread_id, intent="hybrid")
                 )
                 rag_result = await asyncio.to_thread(ask_rag, body.question)
 
