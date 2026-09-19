@@ -124,6 +124,15 @@ class PDFConnector(BaseConnector):
                 # 合并：第一批的 headers 作为基准，后续批只取 rows
                 if chunk_idx == 0:
                     all_headers = chunk_headers
+                elif chunk_headers and chunk_headers != all_headers:
+                    # 列数不同时 pandas 会报错，但列数相同、语义不同会「静默串列」——
+                    # 数字对错行且无人察觉，比直接失败危险得多。
+                    # 本连接器的契约是「一个 PDF 一张表」，遇到不同结构就明确报错，不猜不合并。
+                    raise LLMException(
+                        f"PDF 第 {chunk_idx + 1} 批的列结构与首批不一致："
+                        f"首批 {all_headers}，本批 {chunk_headers}。"
+                        f"该连接器一次只处理单表 PDF，请拆分后重试。"
+                    )
                 all_rows.extend(chunk_rows)
 
             except json.JSONDecodeError as e:
