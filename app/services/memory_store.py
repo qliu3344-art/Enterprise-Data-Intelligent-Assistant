@@ -42,6 +42,11 @@ CONFLICT_THRESHOLD = 0.95
 # 主动遗忘：超过 N 天未访问的口径过期删除
 STALE_DAYS = 90
 
+# 召回相似度下限：低于此值视为「与当前问题无关」，既不返回也不计入访问。
+# 不设此值的话，任何问题都会召回 top_k 条（矮子里拔将军）并给它们续命，
+# 导致 STALE_DAYS 过期永远不触发、LRU 淘汰的也不是真正最久未用的口径。
+RECALL_MIN_SCORE = 0.35
+
 # 口径信号词：命中才触发 LLM 提取，避免每轮都消耗一次 LLM 调用
 CONVENTION_HINTS = (
     "指的是", "记住", "口径", "定义", "以后", "叫做", "称为",
@@ -91,6 +96,16 @@ def _has_convention_hint(text: str) -> bool:
     return any(hint in text for hint in CONVENTION_HINTS)
 
 
+def _last_active_at(meta: dict | None, default: int) -> int:
+    """取口径的最后活跃时间。
+
+    优先 last_accessed；旧数据（本次改动前写入的）没有该字段，回退 created_at。
+    两处淘汰逻辑共用此函数，避免回退口径不一致。
+    """
+    m = meta or {}
+    return m.get("last_accessed", m.get("created_at", default))
+
+
 def _evict_oldest(collection):
     """删除最久未访问的一条口径（按 last_accessed 升序，LRU 淘汰）。"""
     try:
@@ -98,11 +113,7 @@ def _evict_oldest(collection):
         if not existing or not existing.get("ids"):
             return
         items = list(zip(existing["ids"], existing["metadatas"]))
-        items.sort(
-            key=lambda x: (x[1] or {}).get(
-                "last_accessed", (x[1] or {}).get("created_at", 0)
-            )
-        )
+        items.sort(key=lambda x: _last_active_at(x[1], 0))
         oldest_id = items[0][0]
         collection.delete(ids=[oldest_id])
         logger.info(f"口径达上限，删除最久未访问一条: {oldest_id}")
@@ -121,7 +132,7 @@ def _evict_stale(collection):
         stale_ids = [
             i
             for i, m in zip(existing["ids"], existing["metadatas"])
-            if now - (m or {}).get("last_accessed", now) > stale_seconds
+            if now - _last_active_at(m, now) > stale_seconds
         ]
         if stale_ids:
             collection.delete(ids=stale_ids)
@@ -258,28 +269,38 @@ def recall_conventions(query: str, top_k: int = 3) -> list[dict]:
         )
 
         hits = []
+        # 相似度达标的命中（id, metadata），用于后续刷新访问时间
+        accessed: list[tuple[str, dict]] = []
+
         if results.get("ids") and results["ids"][0]:
             for i in range(len(results["ids"][0])):
                 distance = results["distances"][0][i] if results["distances"] else 0
                 # Cosine distance ∈ [0,2]，转换为相似度 ∈ [0,1]
                 similarity = 1.0 - (distance / 2.0) if distance else 1.0
+                if similarity < RECALL_MIN_SCORE:
+                    continue
+
+                meta = results["metadatas"][0][i] if results["metadatas"] else {}
                 hits.append({
                     "text": results["documents"][0][i] if results["documents"] else "",
-                    "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                    "metadata": meta,
                     "score": round(similarity, 4),
                 })
+                accessed.append((results["ids"][0][i], dict(meta or {})))
 
             # 刷新命中口径的 last_accessed（供 LRU 淘汰与超期遗忘使用）
-            try:
-                now = int(time.time())
-                refreshed = []
-                for i in range(len(results["ids"][0])):
-                    m = dict(results["metadatas"][0][i] or {}) if results.get("metadatas") else {}
-                    m["last_accessed"] = now
-                    refreshed.append(m)
-                collection.update(ids=results["ids"][0], metadatas=refreshed)
-            except Exception as e:
-                logger.warning(f"刷新口径访问时间失败: {e}")
+            # 未达阈值的不刷新 —— 否则无关问题也会给口径续命，主动遗忘形同虚设
+            if accessed:
+                try:
+                    now = int(time.time())
+                    for _, m in accessed:
+                        m["last_accessed"] = now
+                    collection.update(
+                        ids=[i for i, _ in accessed],
+                        metadatas=[m for _, m in accessed],
+                    )
+                except Exception as e:
+                    logger.warning(f"刷新口径访问时间失败: {e}")
 
         return hits
     except Exception as e:
