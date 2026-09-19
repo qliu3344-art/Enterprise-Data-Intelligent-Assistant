@@ -58,7 +58,7 @@ def _create_checkpointer():
 _checkpointer = _create_checkpointer()
 
 # —— System Prompt：指导 LLM 使用工具并输出结构化答案 ——
-SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问自动化客户数据处理平台的数据库。
+SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问企业数据智能助手的数据库。
 
 你会收到对应的「操作手册」（skill 指令），请严格按照手册中的工具使用说明和决策树执行。
 

@@ -61,7 +61,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8002
 ```bash
 cd frontend
 npm run dev          # Vite 开发服务器，支持 HMR
-npm run build        # 构建到 ../app/static/，由后端 serve
+npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback）
 ```
 
 ---
@@ -171,16 +171,15 @@ npm run build        # 构建到 ../app/static/，由后端 serve
 ## 四、完整项目结构
 
 ```
-自动化客户数据处理平台/
+企业数据智能助手/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                    # FastAPI 入口，注册 6 个 router
+│   ├── main.py                    # FastAPI 入口，注册 7 个 router
 │   ├── config.py                  # 配置管理（.env → Settings）
 │   ├── database.py                # SQLAlchemy engine + session
 │   ├── exceptions.py              # 全局异常定义
 │   ├── logger.py                  # 日志系统
 │   ├── retry.py                   # LLM 调用容错重试（指数退避 + 可重试分类）
-│   ├── static/                    # 前端构建产物（npm run build）
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── chat_history.py        # 对话历史表
