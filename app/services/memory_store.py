@@ -145,7 +145,12 @@ def _confirm_update(old_text: str, new_text: str) -> bool:
     """灰色地带（相似度 0.9~0.95）判定：新口径是「同一条的改口更新」还是「两条不同规则」。
 
     向量相似度只看「像不像」，分不清「是不是反着改」，故此处调 LLM 定性。
-    LLM 失败时默认按「更新」处理（宁可覆盖，避免新旧口径同时被召回造成冲突）。
+
+    判定取向：只有明确得到「更新」才覆盖，语义不明一律保守判「不同」保留两条。
+    覆盖是不可逆的（旧口径永久消失），共存至少人能看出冲突。
+
+    例外：LLM 调用失败时按「更新」处理 —— 此时拿不到任何信息，宁可覆盖，
+    避免新旧口径同时被召回造成矛盾。
     """
     from langchain_community.chat_models.tongyi import ChatTongyi
     from langchain_core.messages import HumanMessage
@@ -169,7 +174,17 @@ def _confirm_update(old_text: str, new_text: str) -> bool:
         )
         resp = llm.invoke([HumanMessage(content=prompt)])
         raw = (resp.content or "").strip()
-        return "不同" not in raw
+
+        # 先判「不同」：模型可能输出「不相同」等变体 —— 含「相同」但不含「不同」，
+        # 语义是「不同」，若用 "不同" not in raw 会被反向误判为更新
+        if "不同" in raw:
+            return False
+        if "更新" in raw:
+            return True
+
+        # 两个关键词都没命中：语义不明，保守判「不同」保留两条，不覆盖
+        logger.warning(f"口径冲突判定语义不明（{raw[:30]}），保守按「不同」保留两条")
+        return False
     except Exception as e:
         logger.warning(f"口径冲突确认失败，默认按更新处理: {e}")
         return True
@@ -212,16 +227,20 @@ def save_convention(content: str, metadata: dict | None = None) -> bool:
                     # 灰色地带（0.9~0.95）：向量只判断「像不像」，调 LLM 确认是「改口更新」还是「两条不同规则」
                     if similarity >= CONFLICT_THRESHOLD or _confirm_update(old_text, content):
                         now = int(time.time())
+                        # 保留旧口径的其余字段（如调用方传入的 source / department），
+                        # 只刷新时间戳 —— 原来整体重建 metadata 会把未知字段静默抹掉
+                        merged_meta = dict(old_meta or {})
+                        merged_meta.update({
+                            "type": "convention",
+                            "created_at": merged_meta.get("created_at", now),
+                            "updated_at": now,
+                            "last_accessed": now,
+                        })
                         collection.update(
                             ids=[old_id],
                             embeddings=[embedding],
                             documents=[content],
-                            metadatas=[{
-                                "type": "convention",
-                                "created_at": old_meta.get("created_at", now),
-                                "updated_at": now,
-                                "last_accessed": now,
-                            }],
+                            metadatas=[merged_meta],
                         )
                         logger.info(f"口径更新（相似度 {similarity:.2f}）: {content[:40]}...")
                         return True
