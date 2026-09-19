@@ -184,6 +184,7 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   │   ├── __init__.py
 │   │   ├── chat_history.py        # 对话历史表
 │   │   ├── query_trace.py         # 查询 Trace 表（可观测性）
+│   │   ├── feedback.py            # 用户反馈表（点赞/点踩，数据飞轮的地基）
 │   │   ├── cleaned_record.py      # 清洗后统一记录表
 │   │   ├── datasource.py          # 数据源配置表
 │   │   ├── pipeline_log.py        # 清洗流水日志表
@@ -202,7 +203,10 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   │   ├── analyzer.py            # 业务分析服务
 │   │   ├── cleaner.py             # 数据清洗 Pipeline（IQR + LLM + pending_review 降级）
 │   │   ├── collector.py           # 采集编排服务
+│   │   ├── context_manager.py     # 上下文压缩（滑动窗口 + LLM 摘要）
+│   │   ├── data_query_ops.py      # 数据查询核心逻辑（协议无关，Agent / MCP 复用）
 │   │   ├── intent_router.py       # LLM 意图路由（data/doc/hybrid）
+│   │   ├── memory_store.py        # 业务口径长期记忆（ChromaDB + 去重/遗忘）
 │   │   ├── query_agent.py         # LangChain ReAct Agent + Checkpointer
 │   │   ├── connectors/
 │   │   │   ├── __init__.py
@@ -211,20 +215,29 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   │   │   ├── excel.py           # ExcelConnector
 │   │   │   ├── mysql_conn.py      # MySQLConnector
 │   │   │   └── pdf.py             # PDFConnector（LLM 驱动）
-│   │   └── rag/
+│   │   ├── rag/
+│   │   │   ├── __init__.py
+│   │   │   ├── chunker.py         # 文档切分
+│   │   │   ├── document_loader.py # 多格式文档加载
+│   │   │   ├── embedder.py        # BGE 向量化
+│   │   │   ├── retriever.py       # 混合检索（向量 + BM25）
+│   │   │   ├── service.py         # RAG 答案生成 + 引用溯源
+│   │   │   └── vector_store.py    # ChromaDB 索引管理
+│   │   └── skills/
 │   │       ├── __init__.py
-│   │       ├── chunker.py         # 文档切分
-│   │       ├── document_loader.py # 多格式文档加载
-│   │       ├── embedder.py        # BGE 向量化
-│   │       ├── retriever.py       # 混合检索（向量 + BM25）
-│   │       ├── service.py         # RAG 答案生成 + 引用溯源
-│   │       └── vector_store.py    # ChromaDB 索引管理
+│   │       ├── base.py            # Skill 抽象（元数据 + handler）
+│   │       ├── registry.py        # Skill 注册表（intent → Skill）
+│   │       ├── instructions.py    # 工具操作手册（按 intent 注入）
+│   │       ├── data_query.py      # 结构化数据查询 Skill
+│   │       ├── doc_query.py       # 制度文档问答 Skill（RAG）
+│   │       └── hybrid.py          # 数据 + 文档融合回答 Skill
 │   └── routers/
 │       ├── __init__.py
 │       ├── analysis.py            # 分析报表 API
 │       ├── clean.py               # 清洗管理 API
 │       ├── collect.py             # 采集触发 API
 │       ├── datasource.py          # 数据源管理 API
+│       ├── feedback.py            # 用户反馈 API（点赞/点踩）
 │       ├── query.py               # 自然语言查询 API（三路路由 + SSE 流式）
 │       └── rag.py                 # RAG 制度问答 API
 ├── frontend/
@@ -233,7 +246,7 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   ├── src/
 │   │   ├── main.ts
 │   │   ├── App.vue
-│   │   ├── api/                   # Axios 请求封装（analysis/clean/collect/datasource/query/rag）
+│   │   ├── api/                   # Axios 请求封装（analysis/clean/collect/datasource/feedback/query/rag）
 │   │   ├── components/
 │   │   │   ├── analysis/TrendChart.vue
 │   │   │   ├── common/StatusTag.vue
@@ -245,9 +258,16 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   └── env.d.ts
 ├── scripts/
 │   ├── init_db.py                 # 建库建表
-│   ├── setup_db.py                # 数据库连接设置
+│   ├── setup_db.py                # 一键建库 + 采集 + 清洗（端到端验证）
 │   ├── generate_mock_data.py      # 生成模拟多源数据
-│   └── test_rag.py                # RAG 功能测试
+│   ├── verify_e2e.py              # 端到端验证（TestClient，不走 HTTP）
+│   ├── test_full_interaction.py   # 全 API 端点交互测试
+│   ├── test_rag.py                # RAG 全链路测试（索引 → 检索 → 问答）
+│   ├── test_json_convert.py       # _json_to_text 转换测试
+│   ├── expand_dataset.py          # 评估数据集自动扩充（LLM 生成同义变体）
+│   ├── check_dataset_quality.py   # 评估数据集质检（漂移/重复/过短）
+│   ├── backfill_keywords.py       # 回填评测集缺失的 expected_doc_keywords
+│   └── sync_feedback_to_dataset.py # 点踩反馈 → 评测集候选样本
 ├── data/
 │   ├── uploads/                   # 上传的原始文件
 │   └── exports/                   # 导出的分析报告
