@@ -12,7 +12,7 @@ if _env_path.exists():
 
 
 class Settings:
-    PROJECT_NAME: str = "自动化客户数据处理平台"
+    PROJECT_NAME: str = "企业数据智能助手"
     VERSION: str = "1.0.0"
 
     # MySQL
