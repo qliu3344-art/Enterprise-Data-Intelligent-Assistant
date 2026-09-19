@@ -280,7 +280,6 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 ├── logs/                          # 日志文件目录
 ├── requirements.txt
 ├── README.md
-├── INTERVIEW_GUIDE.md             # 面试准备指南
 ├── start.bat                      # Windows 一键启动（CMD）
 ├── start.ps1                      # Windows 一键启动（PowerShell）
 ├── .env                           # 环境变量（需自行创建）
