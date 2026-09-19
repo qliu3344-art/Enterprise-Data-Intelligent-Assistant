@@ -14,6 +14,10 @@ collection（business_conventions），与制度文档（enterprise_policies）�
 
 核心原则：按需注入，不是全量注入 —— 只召回最相关的口径拼进上下文，
 不无脑塞满。
+
+生命周期：写入侧「去重/更新」（相似度 ≥0.9 视为同一条，覆盖 + 记 updated_at，
+0.9~0.95 灰色地带调 LLM 确认是否改口）＋「主动遗忘」（last_accessed + LRU 淘汰
+＋超期 STALE_DAYS 过期删除）＋「上限」（MAX_CONVENTIONS 满员删最久未访问）。
 """
 
 import time
@@ -31,8 +35,12 @@ CONVENTION_COLLECTION = "business_conventions"
 # 全局口径上限：超出后删除最旧的口径（防止无界增长）
 MAX_CONVENTIONS = 200
 
-# 去重阈值：相似度超过此值视为重复口径，不重复写入
+# 去重/更新阈值：相似度超过此值视为「同一条口径」（重复说或改口）
 DEDUP_THRESHOLD = 0.9
+# 直接覆盖阈值：相似度超过此值直接判「更新」，无需 LLM 确认
+CONFLICT_THRESHOLD = 0.95
+# 主动遗忘：超过 N 天未访问的口径过期删除
+STALE_DAYS = 90
 
 # 口径信号词：命中才触发 LLM 提取，避免每轮都消耗一次 LLM 调用
 CONVENTION_HINTS = (
@@ -84,29 +92,88 @@ def _has_convention_hint(text: str) -> bool:
 
 
 def _evict_oldest(collection):
-    """删除最旧的一条口径（按 created_at 升序取最早一条）。"""
+    """删除最久未访问的一条口径（按 last_accessed 升序，LRU 淘汰）。"""
     try:
         existing = collection.get(include=["metadatas"])
         if not existing or not existing.get("ids"):
             return
         items = list(zip(existing["ids"], existing["metadatas"]))
-        items.sort(key=lambda x: (x[1] or {}).get("created_at", 0))
+        items.sort(
+            key=lambda x: (x[1] or {}).get(
+                "last_accessed", (x[1] or {}).get("created_at", 0)
+            )
+        )
         oldest_id = items[0][0]
         collection.delete(ids=[oldest_id])
-        logger.info(f"口径达上限，删除最旧一条: {oldest_id}")
+        logger.info(f"口径达上限，删除最久未访问一条: {oldest_id}")
     except Exception as e:
-        logger.warning(f"删除最旧口径失败: {e}")
+        logger.warning(f"删除最久未访问口径失败: {e}")
+
+
+def _evict_stale(collection):
+    """删除超过 STALE_DAYS 天未访问的口径（主动遗忘）。"""
+    try:
+        existing = collection.get(include=["metadatas"])
+        if not existing or not existing.get("ids"):
+            return
+        now = int(time.time())
+        stale_seconds = STALE_DAYS * 24 * 3600
+        stale_ids = [
+            i
+            for i, m in zip(existing["ids"], existing["metadatas"])
+            if now - (m or {}).get("last_accessed", now) > stale_seconds
+        ]
+        if stale_ids:
+            collection.delete(ids=stale_ids)
+            logger.info(f"过期口径清理：删除 {len(stale_ids)} 条（>{STALE_DAYS} 天未访问）")
+    except Exception as e:
+        logger.warning(f"过期口径清理失败: {e}")
+
+
+def _confirm_update(old_text: str, new_text: str) -> bool:
+    """灰色地带（相似度 0.9~0.95）判定：新口径是「同一条的改口更新」还是「两条不同规则」。
+
+    向量相似度只看「像不像」，分不清「是不是反着改」，故此处调 LLM 定性。
+    LLM 失败时默认按「更新」处理（宁可覆盖，避免新旧口径同时被召回造成冲突）。
+    """
+    from langchain_community.chat_models.tongyi import ChatTongyi
+    from langchain_core.messages import HumanMessage
+
+    from app.config import settings
+
+    prompt = (
+        "下面两条「业务口径」文本语义高度相似。请判断：第二条是「对第一条的改口/更新」"
+        "（同一指标，用户修正了说法），还是「两条不同但相似的口径」（两个不同规则）？\n"
+        "只输出「更新」或「不同」两个词之一。\n\n"
+        f"第一条：{old_text}\n"
+        f"第二条：{new_text}\n\n"
+        "输出："
+    )
+    try:
+        llm = ChatTongyi(
+            model=settings.LLM_MODEL,
+            dashscope_api_key=settings.DASHSCOPE_API_KEY,
+            temperature=0.0,
+            max_tokens=20,
+        )
+        resp = llm.invoke([HumanMessage(content=prompt)])
+        raw = (resp.content or "").strip()
+        return "不同" not in raw
+    except Exception as e:
+        logger.warning(f"口径冲突确认失败，默认按更新处理: {e}")
+        return True
 
 
 def save_convention(content: str, metadata: dict | None = None) -> bool:
-    """保存一条业务口径（去重 + 上限控制）。
+    """保存一条业务口径（去重/更新 + 主动遗忘 + 上限控制）。
 
     Args:
         content: 口径文本（如「合同额指含税合同金额」）
         metadata: 额外元数据
 
     Returns:
-        是否保存成功（重复口径会返回 False）
+        是否保存成功。重复口径会「覆盖」旧口径（更新）并返回 True；
+        判定为两条不同规则时作为新口径写入。
     """
     content = (content or "").strip()
     if not content:
@@ -116,28 +183,47 @@ def save_convention(content: str, metadata: dict | None = None) -> bool:
         collection = _get_convention_collection()
         embedding = embed_documents([content])[0]
 
-        # 去重：检索最相似的一条，相似度过高则不重复写
+        # 去重/更新：检索最相似的一条，相似度过高视为「同一条口径」，覆盖而非跳过
+        # （重复说→覆盖成一样，无害；改口→覆盖成新口径，正确）
         if collection.count() > 0:
             dup = collection.query(
                 query_embeddings=[embedding],
                 n_results=1,
-                include=["distances"],
+                include=["distances", "documents", "metadatas"],
             )
             if dup.get("distances") and dup["distances"][0]:
                 distance = dup["distances"][0][0]
                 similarity = 1.0 - (distance / 2.0)
                 if similarity >= DEDUP_THRESHOLD:
-                    logger.info(
-                        f"口径重复（相似度 {similarity:.2f}），跳过: {content[:40]}..."
-                    )
-                    return False
+                    old_id = dup["ids"][0][0]
+                    old_text = dup["documents"][0][0] if dup.get("documents") else ""
+                    old_meta = dup["metadatas"][0][0] if dup.get("metadatas") else {}
+                    # 灰色地带（0.9~0.95）：向量只判断「像不像」，调 LLM 确认是「改口更新」还是「两条不同规则」
+                    if similarity >= CONFLICT_THRESHOLD or _confirm_update(old_text, content):
+                        now = int(time.time())
+                        collection.update(
+                            ids=[old_id],
+                            embeddings=[embedding],
+                            documents=[content],
+                            metadatas=[{
+                                "type": "convention",
+                                "created_at": old_meta.get("created_at", now),
+                                "updated_at": now,
+                                "last_accessed": now,
+                            }],
+                        )
+                        logger.info(f"口径更新（相似度 {similarity:.2f}）: {content[:40]}...")
+                        return True
+                    # 判定为「两条不同规则」：落入下方按新口径写入
 
-        # 上限：超出则删除最旧一条，再写入
+        # 主动遗忘：先清理过期口径，再做上限淘汰
+        _evict_stale(collection)
         if collection.count() >= MAX_CONVENTIONS:
             _evict_oldest(collection)
 
         convention_id = f"conv_{uuid.uuid4().hex}"
-        meta = {"type": "convention", "created_at": int(time.time())}
+        now = int(time.time())
+        meta = {"type": "convention", "created_at": now, "updated_at": now, "last_accessed": now}
         if metadata:
             meta.update(metadata)
         collection.add(
@@ -182,6 +268,19 @@ def recall_conventions(query: str, top_k: int = 3) -> list[dict]:
                     "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
                     "score": round(similarity, 4),
                 })
+
+            # 刷新命中口径的 last_accessed（供 LRU 淘汰与超期遗忘使用）
+            try:
+                now = int(time.time())
+                refreshed = []
+                for i in range(len(results["ids"][0])):
+                    m = dict(results["metadatas"][0][i] or {}) if results.get("metadatas") else {}
+                    m["last_accessed"] = now
+                    refreshed.append(m)
+                collection.update(ids=results["ids"][0], metadatas=refreshed)
+            except Exception as e:
+                logger.warning(f"刷新口径访问时间失败: {e}")
+
         return hits
     except Exception as e:
         logger.error(f"召回业务口径失败: {e}")
