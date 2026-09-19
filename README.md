@@ -1,4 +1,4 @@
-# 自动化客户数据处理平台
+# 企业数据智能助手
 
 多源异构数据采集、清洗、标准化与智能分析平台。支持 Excel / CSV / MySQL / PDF 四种数据源自动接入，通过 LLM 驱动的清洗 Pipeline 和 LangChain Agent 实现自然语言交互式数据查询。
 
@@ -41,8 +41,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/qliu3344-art/-.git
-cd 自动化客户数据处理平台
+git clone https://github.com/qliu3344-art/Enterprise-Data-Intelligent-Assistant.git
+cd 企业数据智能助手
 ```
 
 ### 2. 安装依赖
@@ -90,7 +90,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8002
 cd frontend
 npm install
 npm run dev       # Vite 开发服务器，支持 HMR
-npm run build     # 构建到 app/static/，由后端 serve
+npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 ```
 
 ## 📖 架构概览
@@ -115,28 +115,32 @@ npm run build     # 构建到 app/static/，由后端 serve
 
 ```
 ├── app/
-│   ├── main.py              # FastAPI 入口，注册 6 个 Router
+│   ├── main.py              # FastAPI 入口，注册 7 个 Router
 │   ├── config.py            # 配置管理（.env → Settings）
 │   ├── database.py          # SQLAlchemy 引擎与 Session
+│   ├── mcp_server.py        # MCP Server（查询能力对外标准化出口）
 │   ├── models/              # 8 张数据表 ORM 模型
 │   ├── schemas/             # Pydantic 请求/响应模型
-│   ├── routers/             # 6 组 REST API
+│   ├── routers/             # 7 组 REST API
 │   │   ├── datasource.py    # 数据源 CRUD
 │   │   ├── collect.py       # 采集触发
 │   │   ├── clean.py         # 清洗管理
 │   │   ├── analysis.py      # 分析报表
 │   │   ├── query.py         # 自然语言查询（SSE 流式）
-│   │   └── rag.py           # RAG 制度问答
+│   │   ├── rag.py           # RAG 制度问答
+│   │   └── feedback.py      # 用户反馈
 │   └── services/
 │       ├── connectors/      # 4 种数据源连接器（策略模式）
+│       ├── skills/          # Skill 注册表（意图 → 能力，按需加载）
 │       ├── aligner.py       # LLM 异构表头对齐
 │       ├── cleaner.py       # 三步清洗 Pipeline
 │       ├── collector.py     # 采集编排
 │       ├── analyzer.py      # 多维度分析
 │       ├── intent_router.py # LLM 意图分类
 │       ├── query_agent.py   # LangChain ReAct Agent
+│       ├── data_query_ops.py  # 数据查询原子操作（Agent 与 MCP 共用）
 │       ├── context_manager.py # 多轮对话上下文压缩（滑动窗口+摘要）
-│       ├── memory_store.py    # 业务口径记忆（去重 + 上限）
+│       ├── memory_store.py    # 业务口径记忆（改口更新 + 主动遗忘 + 上限）
 │       └── rag/             # RAG 管线（加载/切分/向量化/检索/生成）
 ├── frontend/                # Vue 3 SPA
 ├── scripts/                 # 初始化、模拟数据、测试脚本
@@ -172,11 +176,13 @@ npm run build     # 构建到 app/static/，由后端 serve
 ```json
 {
   "question": "销售部上个月订单金额最高的前 5 名员工是谁？",
-  "thread_id": "session_001"
+  "session_id": "session_001"
 }
 ```
 
-SSE 流式返回，支持多轮对话。
+返回 JSON 结果；传入相同 `session_id` 可保持多轮对话上下文（留空则每次独立）。
+
+流式版本 `POST /api/v1/query/stream` 以 SSE 实时推送 `intent` / `tool_call` / `tool_result` / `answer` 等事件。
 
 ### RAG 问答 `POST /api/v1/rag/ask`
 
@@ -188,12 +194,19 @@ SSE 流式返回，支持多轮对话。
 
 返回答案 + 引用原文来源。
 
+### 用户反馈 `POST/GET /api/v1/feedback`
+
+对助手回答点赞/点踩（rating = 1 / -1），点踩可附纠错文本。后端 best-effort 关联最近一次同问题的 `query_trace`，便于 badcase 归因。
+
+点踩反馈可经 `scripts/sync_feedback_to_dataset.py` 半自动回灌评估数据集（ground truth 由人工确认）。
+
 ## 🧪 评估体系
 
 ```bash
-python eval.py                      # 全量四维度评估
+python eval.py                       # 全量四维度评估
 python eval.py --category data_query # 只测数据查询类
-python eval.py --skip-agent          # 只测意图分类 + 答案质量（无需数据库）
+python eval.py --skip-agent          # 只测意图分类 + RAG + LLM Judge（无需数据库）
+python eval.py --skip-rag-semantic   # 跳过语义 RAG，只保留关键词命中率（省钱）
 ```
 
 | 维度 | 权重 | 说明 |
