@@ -107,5 +107,5 @@ for a in anomalies[:3]:
 print(f"\n{'='*60}")
 print(f"  ✅ 端到端验证完成！")
 print(f"{'='*60}")
-print(f"  前端: http://localhost:8001")
-print(f"  API文档: http://localhost:8001/docs")
+print(f"  前端: http://localhost:8002")
+print(f"  API文档: http://localhost:8002/docs")
