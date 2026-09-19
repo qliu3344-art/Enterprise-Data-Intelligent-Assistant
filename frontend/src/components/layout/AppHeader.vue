@@ -22,6 +22,6 @@ const pageTitle = computed(() => titles[route.name as string] || '')
 <template>
   <div class="flex items-center justify-between h-full px-6">
     <h1 class="text-lg font-semibold text-gray-800">{{ pageTitle }}</h1>
-    <span class="text-sm text-gray-400">自动化客户数据处理平台 v1.0</span>
+    <span class="text-sm text-gray-400">企业数据智能助手 v1.0</span>
   </div>
 </template>

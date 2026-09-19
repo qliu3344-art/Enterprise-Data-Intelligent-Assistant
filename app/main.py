@@ -1,4 +1,4 @@
-"""自动化客户数据处理平台 — FastAPI 应用入口。"""
+"""企业数据智能助手 — FastAPI 应用入口。"""
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
