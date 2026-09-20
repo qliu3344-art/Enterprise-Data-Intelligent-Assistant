@@ -58,7 +58,7 @@ def embed_documents(texts: List[str]) -> List[List[float]]:
         texts: 待向量化的文本列表
 
     Returns:
-        向量列表，每个向量 768 维
+        向量列表，每个向量 512 维
     """
     model = _get_model()
     embeddings = model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
@@ -72,7 +72,7 @@ def embed_query(query: str) -> List[float]:
         query: 原始查询文本
 
     Returns:
-        768 维向量
+        512 维向量
     """
     model = _get_model()
     embedding = model.encode(
