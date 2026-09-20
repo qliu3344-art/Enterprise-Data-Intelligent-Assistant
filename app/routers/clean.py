@@ -424,6 +424,9 @@ def _safe_json(val) -> dict | None:
     if isinstance(val, dict):
         return val
     return None
+
+
+def _safe_date(val):
     """安全转换日期。"""
     if val is None or pd.isna(val):
         return None
