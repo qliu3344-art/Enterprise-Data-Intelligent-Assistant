@@ -52,6 +52,14 @@ def health_check():
 def on_startup():
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} 启动成功")
 
+    # L0 参数防线：意图标签单 token 校验，fail fast。
+    # 多 token 标签不会报错，只会安静地返回一个偏高的错误概率——静默错误。
+    # 所以这里不 try/except：宁可服务起不来，也不能带着错的置信度上线。
+    from app.services.intent_router import verify_single_token_labels
+
+    lengths = verify_single_token_labels()
+    logger.info(f"意图标签单 token 校验通过: {lengths}")
+
     # 自动初始化 RAG 索引（per-document 增量，只重算变化的文档）
     try:
         from app.services.rag.vector_store import index_all

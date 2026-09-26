@@ -317,16 +317,21 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
             "answer": "查询服务暂时不可用，请稍后重试。",
             "iterations": 0,
             "tools_used": [],
+            "tool_calls": [],
         }
 
     messages = result.get("messages", [])
     answer = ""
     tools_used = []
+    tool_calls = []
 
     for msg in messages:
         if hasattr(msg, "tool_calls") and msg.tool_calls:
             for tc in msg.tool_calls:
                 tools_used.append(tc.get("name", "unknown"))
+                tool_calls.append(
+                    {"name": tc.get("name", "unknown"), "args": tc.get("args", {})}
+                )
         if hasattr(msg, "content") and msg.content and not hasattr(msg, "tool_calls"):
             answer = msg.content
 
@@ -352,6 +357,8 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
         "answer": answer,
         "iterations": iterations,
         "tools_used": tools_used,
+        # 工具名 + 实际参数，供评测核对参数是否填对（tools_used 保持原样不破坏调用方）
+        "tool_calls": tool_calls,
     }
 
 
@@ -377,6 +384,7 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
 
         final_answer = ""
         tools_used = []
+        tool_calls = []
 
         input_messages = []
         if memory_msg is not None:
@@ -399,12 +407,15 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
                         if hasattr(msg, "tool_calls") and msg.tool_calls:
                             for tc in msg.tool_calls:
                                 tool_name = tc.get("name", "unknown")
+                                tool_args = tc.get("args", {})
                                 tools_used.append(tool_name)
+                                # 与 SSE 推出去的是同一个对象——一次采集，多个出口
+                                tool_calls.append({"name": tool_name, "args": tool_args})
                                 yield {
                                     "event": "tool_call",
                                     "data": {
                                         "tool": tool_name,
-                                        "args": tc.get("args", {}),
+                                        "args": tool_args,
                                     },
                                 }
                         elif hasattr(msg, "content") and msg.content:
@@ -435,6 +446,7 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
                 "content": final_answer,
                 "iterations": len(tools_used),
                 "tools_used": tools_used,
+                "tool_calls": tool_calls,
             },
         }
 

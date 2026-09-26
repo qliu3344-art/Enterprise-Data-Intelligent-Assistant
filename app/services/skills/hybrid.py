@@ -31,7 +31,7 @@ FUSION_PROMPT = """你是一个专业的企业数据分析师。请综合以下�
 
 
 def _fuse_hybrid_answer(
-    question: str, agent_answer: str, rag_answer: str, rag_chunks: list[dict]
+    question: str, agent_answer: str, rag_chunks: list[dict]
 ) -> str:
     """用 LLM 将 Agent 数据结果和 RAG 制度条款融合为统一自然语言回答。
 
@@ -75,10 +75,8 @@ def _fuse_hybrid_answer(
         return response.content
     except Exception as e:
         logger.error(f"融合回答生成失败: {e}")
-        # 降级：数据结果 + RAG 回答拼合
-        if rag_answer and "未找到" not in rag_answer:
-            return f"{agent_answer}\n\n📋 制度依据：\n{rag_answer}"
-        return agent_answer
+        # 降级：数据结果 + 原始制度条款拼合（与主路径一致，不退回 RAG 的 LLM 回答）
+        return f"{agent_answer}\n\n📋 制度依据：\n{chunks_text}"
 
 
 async def hybrid_handler(question: str, thread_id: str = "default") -> SkillResult:
@@ -89,12 +87,11 @@ async def hybrid_handler(question: str, thread_id: str = "default") -> SkillResu
     agent_task = asyncio.create_task(_collect_agent(question, thread_id, "hybrid"))
     rag_result = await asyncio.to_thread(ask_rag, question)
 
-    agent_answer, iterations, tools_used = await agent_task
-    rag_answer = rag_result.get("answer", "")
+    agent_answer, iterations, tools_used, tool_calls = await agent_task
     rag_sources = rag_result.get("sources", [])
 
     final_answer = await asyncio.to_thread(
-        _fuse_hybrid_answer, question, agent_answer, rag_answer, rag_sources
+        _fuse_hybrid_answer, question, agent_answer, rag_sources
     )
 
     return SkillResult(
@@ -102,6 +99,7 @@ async def hybrid_handler(question: str, thread_id: str = "default") -> SkillResu
         mode="hybrid",
         iterations=iterations,
         tools_used=tools_used,
+        tool_calls=tool_calls,
         extra={
             "rag_data": {
                 "chunks_count": rag_result.get("chunks_count", 0),
