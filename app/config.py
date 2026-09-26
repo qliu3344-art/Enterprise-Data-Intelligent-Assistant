@@ -33,6 +33,10 @@ class Settings:
     DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", "")
     LLM_MODEL: str = "qwen-turbo"
 
+    # 意图标签单 token 校验用的 tokenizer（须与线上服务的分词器同族）。
+    # 也可以指向本地目录，离线环境预下载后改这里即可。
+    INTENT_TOKENIZER: str = os.getenv("INTENT_TOKENIZER", "Qwen/Qwen2.5-1.5B-Instruct")
+
     # 文件存储
     UPLOAD_DIR: str = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "data", "uploads"

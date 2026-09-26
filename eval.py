@@ -111,17 +111,55 @@ def eval_intent(item: dict) -> dict:
 
 
 # —————— 维度 2: 工具选择 ——————
+def _normalize_arg(value) -> str:
+    """参数值归一化：统一成去空白的字符串再比，避免 None 与 "" 误判成不等。"""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _check_tool_args(expected_args: dict, used_calls: list[dict], tool_name: str) -> dict:
+    """核对某工具被调用时实际传的参数。
+
+    只校验 expected_args 里列出的键——工具还有 limit 之类的可选参数，
+    多传不算错。同一工具被调用多次时，任一次匹配即算通过。
+    """
+    calls = [c for c in used_calls if c.get("name") == tool_name]
+    if not calls:
+        return {"matched": False, "detail": "该工具未被调用"}
+
+    for call in calls:
+        actual = call.get("args") or {}
+        if all(
+            _normalize_arg(actual.get(key)) == _normalize_arg(value)
+            for key, value in expected_args.items()
+        ):
+            return {"matched": True, "detail": "参数匹配"}
+
+    return {
+        "matched": False,
+        "detail": f"参数不符：期望 {expected_args}，实际 {calls[0].get('args') or {}}",
+    }
+
+
 def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | None:
-    """评估 Agent 工具选择准确率。需要数据库中有数据。"""
+    """评估 Agent 工具选择准确率。需要数据库中有数据。
+
+    选对工具只是第一步——同一个工具换组参数就是另一次查询，所以数据集
+    给了 expected_args 时还要核对参数，否则「工具名对、参数全错」也算满分。
+    """
     from app.services.query_agent import run_query
 
     expected_tools = set(item.get("expected_tools", []))
     if not expected_tools:
         return None  # 该问题不涉及工具选择
 
+    expected_args = item.get("expected_args", {})
+
     try:
         result = run_query(item["question"], thread_id=thread_id)
         used_tools = set(result.get("tools_used", []))
+        used_calls = result.get("tool_calls", [])
     except Exception as e:
         return {
             "question": item["question"],
@@ -129,6 +167,7 @@ def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | N
             "used_tools": [],
             "precision": 0.0,
             "recall": 0.0,
+            "arg_check": {},
             "error": str(e),
         }
 
@@ -137,12 +176,20 @@ def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | N
     # 召回率：预期工具中有多少被实际调用了
     recall = len(used_tools & expected_tools) / len(expected_tools) if expected_tools else 1.0
 
+    # 参数核对：只对数据集中声明了 expected_args 的工具做
+    arg_check = {
+        tool: _check_tool_args(args, used_calls, tool)
+        for tool, args in expected_args.items()
+    }
+
     return {
         "question": item["question"],
         "expected_tools": list(expected_tools),
         "used_tools": list(used_tools),
+        "used_calls": used_calls,
         "precision": round(precision, 2),
         "recall": round(recall, 2),
+        "arg_check": arg_check,
     }
 
 
@@ -399,7 +446,10 @@ def run_eval(
                     if "error" in tool_result:
                         print(f"  工具: ⚠️ {tool_result['error'][:80]}")
                     else:
-                        print(f"  工具: precision={tool_result['precision']} recall={tool_result['recall']}")
+                        arg_note = ""
+                        for tool, c in (tool_result.get("arg_check") or {}).items():
+                            arg_note += f" 参数{'✅' if c['matched'] else '❌'}[{tool}]"
+                        print(f"  工具: precision={tool_result['precision']} recall={tool_result['recall']}{arg_note}")
 
             # 维度 3a: RAG 关键词命中率（快速基线）
             rag_result = eval_rag_retrieval(item)
@@ -460,6 +510,21 @@ def run_eval(
         avg_precision = round(sum(r["precision"] for r in results["tool_selection"]) / len(results["tool_selection"]), 2)
         avg_recall = round(sum(r["recall"] for r in results["tool_selection"]) / len(results["tool_selection"]), 2)
         print(f"\n📌 工具选择 — 平均精确率: {avg_precision}\t平均召回率: {avg_recall}\t权重: {WEIGHTS['tool_selection']}")
+
+        # 参数准确率：只统计数据集中声明了 expected_args 的条目
+        checked = [r for r in results["tool_selection"] if r.get("arg_check")]
+        if checked:
+            arg_ok = sum(
+                1 for r in checked if all(c["matched"] for c in r["arg_check"].values())
+            )
+            rate = round(arg_ok / len(checked) * 100, 1)
+            print(f"📌 参数准确率: {rate}% ({arg_ok}/{len(checked)})\t← 只统计声明了 expected_args 的条目")
+            for r in checked:
+                for tool, c in r["arg_check"].items():
+                    if not c["matched"]:
+                        print(f"  ❌ \"{r['question'][:40]}\" [{tool}] {c['detail']}")
+        else:
+            print("📌 参数准确率: 无条目声明 expected_args（跳过）")
     else:
         avg_precision = 0
         avg_recall = 0

@@ -12,6 +12,7 @@
     "question": "郑十为什么被标记为异常？",
     "expected_intent": "hybrid",
     "expected_tools": ["get_anomaly_details"],
+    "expected_args": {"get_anomaly_details": {"employee_name": "郑十"}},
     "reference_keywords": ["郑十", "异常"],
     "category": "hybrid"
   },
@@ -28,6 +29,7 @@
     "question": "技术部有多少条异常记录？",
     "expected_intent": "data_query",
     "expected_tools": ["get_anomaly_details"],
+    "expected_args": {"get_anomaly_details": {"department": "技术部"}},
     "reference_keywords": ["技术部", "异常"],
     "category": "data_query"
   },
@@ -43,7 +45,8 @@
     "id": 6,
     "question": "运营部完成率最低的指标是什么？",
     "expected_intent": "data_query",
-    "expected_tools": ["get_summary_stats"],
+    "expected_tools": ["query_cleaned_records"],
+    "expected_args": {"query_cleaned_records": {"data_type": "operation"}},
     "reference_keywords": ["运营", "完成率"],
     "category": "data_query"
   },
@@ -76,6 +79,7 @@
     "question": "张三这个月的销售业绩怎么样？",
     "expected_intent": "data_query",
     "expected_tools": ["query_cleaned_records"],
+    "expected_args": {"query_cleaned_records": {"data_type": "sales"}},
     "reference_keywords": ["张三", "销售", "业绩"],
     "category": "data_query"
   },
@@ -84,6 +88,7 @@
     "question": "合同金额超过10万的客户有哪些？",
     "expected_intent": "data_query",
     "expected_tools": ["query_cleaned_records"],
+    "expected_args": {"query_cleaned_records": {"data_type": "customer"}},
     "reference_keywords": ["合同", "客户", "10万"],
     "category": "data_query"
   },
@@ -101,6 +106,7 @@
     "question": "销售部合同金额为什么被判定为异常？",
     "expected_intent": "hybrid",
     "expected_tools": ["get_anomaly_details"],
+    "expected_args": {"get_anomaly_details": {"department": "销售部"}},
     "reference_keywords": ["销售", "合同", "异常"],
     "category": "hybrid"
   },
@@ -133,6 +139,7 @@
     "question": "客户跟进日期超过30天没更新的有哪些？",
     "expected_intent": "data_query",
     "expected_tools": ["query_cleaned_records"],
+    "expected_args": {"query_cleaned_records": {"data_type": "customer"}},
     "reference_keywords": ["客户", "跟进", "30天"],
     "category": "data_query"
   },

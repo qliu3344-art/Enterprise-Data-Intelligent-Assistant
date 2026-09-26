@@ -8,11 +8,12 @@
 - **PDF 智能提取** — 通义千问大模型将非结构化 PDF 报表自动转换为结构化表格
 - **异构表头对齐** — LLM 语义匹配 + 置信度评分，低置信度标红人工确认，未确认的映射清洗时拦截
 - **数据清洗 Pipeline** — 去重 → 缺失值填充 → IQR 统计初筛 + LLM 业务异常判定（LLM 失败自动降级为待人工审核），三步流水线
-- **自然语言智能查询** — 用中文提问（"销售部 11 月异常率多少？"），LLM 意图分类 + 关键词兜底 + 低置信度自动降级 hybrid 双引擎，Agent 执行查询、解释结果
+- **候选不截断** — 偏离度排序只决定「先看谁」，不决定「看谁」；候选按单批容量分批全量送审，覆盖百分之百，一条不丢
+- **logprobs 意图路由** — 用中文提问（"销售部 11 月异常率多少？"），不靠模型自报置信度，直接读首 token 的真实概率分布（`p_top` / `label_mass` / `margin`）；阈值 0.75 由成本比 `C_h:C_e = 1:4` 推导，低于阈值升级走双引擎安全网
 - **RAG 制度文档问答** — BGE 向量化 + BM25 混合检索 + 引用溯源，让 AI 基于企业内部文档回答制度问题
 - **多轮对话上下文压缩** — 滑动窗口保留最近原文 + LLM 摘要压缩旧历史 + 业务口径记忆按需召回，短中长三级防止上下文溢出
-- **LLM 调用容错** — 指数退避重试 + 可重试/不可重试分类，异常判定 LLM 失败自动降级为待人工审核
-- **可观测性 Trace** — 每次查询落 `query_trace` 结构化记录（意图/工具/耗时），支撑 badcase 归因
+- **四层降级链** — L0 参数防线（标签单 token 启动校验，fail fast）→ L1 重试（预算由端到端 P99 反推）→ L2 规则降级（匹配用户问题而非模型输出，confidence 上界卡死在阈值之下）→ L3 兜底与熔断
+- **可观测性 Trace** — 每次查询落 `query_trace`：全链路 `trace_id`、工具名 + **实际参数**、分段耗时（意图/检索/Agent/融合）、意图路由的完整分布，支撑 badcase 归因与离线重调阈值
 - **可视化分析报表** — 数据质量报告、趋势分析、异常审核，支持 Excel 导出
 
 ## 🏗️ 技术栈
@@ -97,7 +98,8 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 
 ```
 用户提问（自然语言）
-  → Intent Router（LLM 分类：查数据 / 查文档 / 混合，低置信度兜底 hybrid）
+  → Intent Router（读 logprobs 真实分布 → p_top / label_mass / margin）
+    │    p_top < 0.75 → 升级走 hybrid 安全网（宁可多查不漏）
     ├─ data_query → LangChain ReAct Agent → SQL 查询 → 数据回答
     ├─ doc_query  → RAG Pipeline → 混合检索 → 引用溯源回答
     └─ hybrid     → 双引擎并行 → LLM 合成统一答案（SSE 流式返回）
@@ -110,6 +112,32 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
     │
   Connector 策略模式（Excel / CSV / MySQL / PDF+LLM）
 ```
+
+## 🎯 意图路由：为什么不让模型自报置信度
+
+让模型输出一个 `confidence` 字段，本质是**模型的第二次生成**——一次新的、可能被 prompt 引导的表述。logprobs 则是**第一次生成时就已存在的内部状态**，无法伪装。
+
+一句话：**概率是模型自己的，不是它嘴上说的。**
+
+| 设计点 | 做法 | 为什么 |
+|---|---|---|
+| 标签单 token | 标签写成 `数`/`文`/`混` | `tokenizer.encode("data_query")` 是 2 个 token，多 token 标签只能拿到首 token 处的**边缘概率**，且不报错——静默错误 |
+| `max_tokens=1` | 只取第一个位置的分布 | 消掉「生成后面内容反过来影响首 token」的可能 |
+| `temperature=1` | 保持模型出厂分布 | 温度作用在 softmax 之前，压低温度会把分布人为压陡、`p_top` 虚高 |
+| `top_logprobs=5` | 写死常量 | 合法区间 `[0, 5]`，越界直接 HTTP 400 |
+| 三个派生量 | `p_top` / `label_mass` / `margin` | 前两个能区分「模型在纠结」和「prompt 没约束住」，这是自评置信度给不了的诊断维度 |
+| **绝不重新归一化** | 直接读原始概率 | 归一化看着更像置信度，但正好抹掉 `label_mass` 这个信号 |
+
+**阈值由成本推导，不拍脑袋。** 误判代价不对称：高置信度走错路的代价是 `C_e`，低置信度触发安全网只是多跑一路 hybrid（`C_h`）。只有期望错误代价超过安全网成本时才值得升级：
+
+```
+(1 - p_top) × C_e > C_h   →   p_top < 1 - C_h / C_e
+取 C_h = 1、C_e = 4  →  阈值 0.75
+```
+
+降级分四层：**L0** 参数防线（标签单 token 启动校验，失败即拒绝启动）→ **L1** 重试（预算按端到端 P99 反推，只重试超时/限流/5xx，带随机抖动）→ **L2** 规则降级（匹配**用户问题**的关键词表，`confidence` 被常量卡在阈值之下，强制走安全网）→ **L3** 兜底与熔断（砍掉需要 LLM 的那一步，保留 SQL 执行和向量检索）。
+
+> 低置信度**不是降级，是路由**：手里还有模型给出的真实分布，只是决定不信它。真正的降级发生在**连分布都没拿到**的时候。
 
 ## 📁 项目结构
 
@@ -136,7 +164,7 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 │       ├── cleaner.py       # 三步清洗 Pipeline
 │       ├── collector.py     # 采集编排
 │       ├── analyzer.py      # 多维度分析
-│       ├── intent_router.py # LLM 意图分类
+│       ├── intent_router.py # logprobs 意图路由（分布 → p_top/label_mass/margin）
 │       ├── query_agent.py   # LangChain ReAct Agent
 │       ├── data_query_ops.py  # 数据查询原子操作（Agent 与 MCP 共用）
 │       ├── context_manager.py # 多轮对话上下文压缩（滑动窗口+摘要）
@@ -182,7 +210,14 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 
 返回 JSON 结果；传入相同 `session_id` 可保持多轮对话上下文（留空则每次独立）。
 
-流式版本 `POST /api/v1/query/stream` 以 SSE 实时推送 `intent` / `tool_call` / `tool_result` / `answer` 等事件。
+流式版本 `POST /api/v1/query/stream` 以 SSE 实时推送八种事件，顺序固定：
+
+```
+intent → agent_start → tool_call ⇄ tool_result → answer → done
+                                        ↑ RAG 侧多一个 rag_ready
+```
+
+`done` 必须无条件发（写在 `finally` 分支）——正常结束、抛异常、甚至客户端中途断开，前端都必须收到一个终点，否则 loading 永远转。`error` 之后也要补 `done`：已经推出去的 `tool_result` 撤不回来，所以错误处理不是「终止」而是「收尾」。
 
 ### RAG 问答 `POST /api/v1/rag/ask`
 
@@ -218,7 +253,8 @@ python eval.py --skip-rag-semantic   # 跳过语义 RAG，只保留关键词命�
 
 ## ⚠️ 注意事项
 
-- **LLM 调用成本** — 表头对齐每数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（IQR 已初筛，不再二次截断）
+- **LLM 调用成本** — 表头对齐每数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选，并按单批容量**分批全量**送审，不做数量截断（成本不是截断的理由：一次清洗省掉的是人工几小时的核对）
+- **意图路由的启动校验** — 服务启动时会用 tokenizer 逐个校验标签长度必须为 1，不满足直接启动失败。多 token 标签不会报错，只会安静地返回一个偏高的错误概率，属于最危险的静默错误
 - **不依赖 LLM** — 异常判定结果为辅助参考，业务人员可人工覆盖
 - **原始数据保护** — `raw_records` 保留原始 JSON，清洗后的数据写入独立表
 - **PDF 限制** — 当前仅支持文本型 PDF，扫描件需额外 OCR

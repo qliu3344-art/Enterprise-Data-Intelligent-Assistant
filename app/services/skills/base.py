@@ -16,6 +16,8 @@ class SkillResult:
     mode: str
     iterations: int = 0
     tools_used: list = field(default_factory=list)
+    # 工具名 + 实际参数。tools_used 只能说明调了哪个工具，参数对不对要看这里
+    tool_calls: list = field(default_factory=list)
     extra: dict = field(default_factory=dict)  # sources / chunks_count / rag_data 等
 
 

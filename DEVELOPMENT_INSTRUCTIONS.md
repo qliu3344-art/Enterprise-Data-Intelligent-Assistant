@@ -295,15 +295,22 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 用户用自然语言提问，系统自动判断意图并路由：
 
 ```
-用户提问 → Intent Router（LLM 分类）
+用户提问 → Intent Router（读 logprobs 真实分布 → p_top / label_mass / margin）
+  │         p_top < 0.75 时不走单引擎，升级为 hybrid 安全网
   ├── data_query → LangChain ReAct Agent → SQL 查询 → 结构化数据回答
   ├── doc_query  → RAG Pipeline → 文档检索 → 引用溯源回答
   └── hybrid     → 两边并行 → LLM 合成统一答案（SSE 流式返回）
 ```
 
-- **Intent Router** (`intent_router.py`)：轻量 LLM 分类，temperature=0，判断 data/doc/hybrid
+- **Intent Router** (`intent_router.py`)：不读模型自报的 confidence，直接读首 token 的 logprobs 分布。
+  - 标签写成单 token 的 `数`/`文`/`混`（`tokenizer.encode("data_query")` 是 2 个 token，多 token 标签只能拿到首 token 处的边缘概率，且不报错）
+  - `max_tokens=1` + `temperature=1` + `top_logprobs=5`（写死常量，合法区间 `[0,5]`，越界 HTTP 400）
+  - 派生量：`p_top`（阈值主指标）、`label_mass`（prompt 约束健康度）、`margin`；**绝不重新归一化**，否则会抹掉 `label_mass` 这个信号
+  - 阈值 0.75 由成本比推出：`(1 - p_top) × C_e > C_h` → `p_top < 1 - C_h / C_e`，取 `C_h = 1`、`C_e = 4`
+  - 降级链 L0–L3：启动时校验标签单 token（fail fast）→ 重试（预算由端到端 P99 反推）→ 规则降级（匹配**用户问题**，confidence 被常量卡在阈值下）→ 兜底与熔断
+  - 每次路由落一条结构化日志（`path` / `degrade` / `top5` 原始分布），供离线重调阈值
 - **Query Agent** (`query_agent.py`)：LangChain 1.x `create_agent` + `@tool` 装饰器定义工具 + SqliteSaver Checkpointer 持久化对话
-- **路由入口** (`routers/query.py`)：三路并发 + SSE 流式响应
+- **路由入口** (`routers/query.py`)：三路并发 + SSE 流式响应；意图路由用 `asyncio.to_thread` 包一层，避免同步 LLM 调用阻塞事件循环
 
 ### 5.2 RAG 管线（services/rag/）
 
@@ -324,7 +331,7 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 
 1. **去重** — 自动识别主键列组合（员工ID+日期等），`drop_duplicates`
 2. **填充** — 数值列中位数填充，分类列众数填充，日期列不填充
-3. **异常判异** — IQR 统计初筛 → LLM 终判（结合业务上下文）。IQR 已做初筛，全部候选送 LLM，不再二次截断。LLM 调用失败时自动降级，候选数据标记为 `pending_review` 待人工审核，不丢弃
+3. **异常判异** — IQR 统计初筛 → LLM 终判（结合业务上下文）。候选按偏离度降序排列，排序只决定「先看谁」、不决定「看谁」，所以不做数量截断；按单批容量（`CANDIDATE_BATCH_SIZE = 30`）**分批全量送审**，覆盖百分之百。LLM 调用失败时该批自动降级，候选数据标记为 `pending_review` 待人工审核，不丢弃；分批之后单批失败不影响其余批次
 
 ### 5.4 Connector 策略模式（services/connectors/）
 
@@ -541,7 +548,7 @@ CREATE TABLE pipeline_logs (
 
 ## 九、关键注意事项
 
-1. **LLM 调用成本控制**：表头对齐每个数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选（IQR 已初筛，不再二次截断）。
+1. **LLM 调用成本控制**：表头对齐每个数据源只调用一次并缓存；异常判异只送 IQR 筛选后的候选，候选按单批容量分批全量送审、不做数量截断（候选只占总数据量的千分之一量级，注意力容量才是分批的理由，成本不是）。
 2. **不允许完全依赖 LLM**：LLM 判异结果是辅助性的，用户可人工覆盖。最终决定权在业务人员。LLM 调用失败时，IQR 候选自动降级为 `pending_review` 状态保留，不做丢弃。
 3. **原始数据不可覆盖**：`raw_records` 表保留原始 JSON，清洗和标准化都在派生表上进行。
 4. **PDF 提取的局限性**：纯扫描件 PDF 需要额外的 OCR（PaddleOCR/Tesseract），当前架构未集成。首期只支持文本型 PDF。

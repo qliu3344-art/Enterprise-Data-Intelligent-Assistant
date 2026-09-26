@@ -41,6 +41,22 @@ ANOMALY_PROMPT = """你是一个业务数据分析师。请判断以下数据中
 ❌ 坏的 reason："加班42.5小时超过均值11.12"（写了数字 → 直接判错）
 """
 
+# 单批容量：一条 prompt 里模型能稳定逐条判断、且不丢注意力，大概就是几十条。
+# 这是「约束」，推出的是「要分批」；不是「总量上限」，那才是取舍、才要丢东西。
+# 两者必须分清——约束是真的，取舍是错的。
+#
+# 成本也不是这里的理由：一批五千行 8 个数值列的数据，偏态业务数据下 IQR 候选在千条
+# 量级，按几十条一批就是几十次调用，全批几万 token，几毛钱的量级——而一次清洗省掉的
+# 是人工几个小时的核对。注意力容量才是理由，成本不是；而注意力容量靠分批解决，
+# 不靠截断解决。
+CANDIDATE_BATCH_SIZE = 30
+
+
+def _batched(items: list, size: int):
+    """按 size 切分列表，最后一批允许不足。"""
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
 
 class CleaningPipeline:
     """三步清洗流程：去重 → 填充 → 异常判异"""
@@ -141,70 +157,89 @@ class CleaningPipeline:
             )
             return []
 
-        # LLM 终判
+        # LLM 终判：候选分批送，覆盖百分之百，一条不丢
         historical_stats = self._compute_basic_stats(df)
-        data_summary = self._summarize_candidates(statistical_candidates)
+        data_type = context.get("data_type", "未知") if context else "未知"
+        date_range = context.get("date_range", "未知") if context else "未知"
 
-        prompt = ANOMALY_PROMPT.format(
-            data_type=context.get("data_type", "未知") if context else "未知",
-            date_range=context.get("date_range", "未知") if context else "未知",
-            historical_stats=historical_stats,
-            data_summary=data_summary,
-        )
+        batches = list(_batched(statistical_candidates, CANDIDATE_BATCH_SIZE))
+        anomalies: list[dict] = []
+        degraded_batches = 0
+        degradation_reason = ""
 
-        try:
-            resp = retry_call(
-                Generation.call,
-                model=settings.LLM_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                result_format="message",
-                temperature=0.1,
+        for bi, batch in enumerate(batches, 1):
+            prompt = ANOMALY_PROMPT.format(
+                data_type=data_type,
+                date_range=date_range,
+                historical_stats=historical_stats,
+                data_summary=self._summarize_candidates(batch),
             )
+            try:
+                resp = retry_call(
+                    Generation.call,
+                    model=settings.LLM_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    result_format="message",
+                    temperature=0.1,
+                )
 
-            content = resp.output.choices[0].message.content.strip()
-            if content.startswith("```"):
-                content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                content = resp.output.choices[0].message.content.strip()
+                if content.startswith("```"):
+                    content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-            result = json.loads(content)
-        except (json.JSONDecodeError, Exception) as e:
-            logger.error(f"LLM 异常判定失败，降级为待审核: {e}")
-            pending = [
-                {
-                    "record_index": c["record_index"],
-                    "field": c["field"],
-                    "value": c["value"],
-                    "is_anomaly": False,
-                    "reason": f"LLM异常降级，待审核: {c['field']} 当前值 {c['value']} 超出 IQR 统计范围",
-                    "pending_review": True,
-                }
-                for c in statistical_candidates
-            ]
-            self._log_step(
-                "anomaly_detect",
-                len(statistical_candidates),
-                len(pending),
-                {
-                    "llm_called": False,
-                    "degraded": True,
-                    "pending_review_count": len(pending),
-                    "error": str(e),
-                },
-            )
-            return pending
+                result = json.loads(content)
+            except Exception as e:
+                # 模型挂掉只意味着「暂时没人下结论」，不意味着「结论是正常」——
+                # 这是两件事，不能混。所以这一批保留候选、标记为待人工审核，
+                # 而不是当成正常放过去。默认值是拒绝，不是放行。
+                # 分批之后单批失败不影响其余批次，不会因为一批挂掉丢掉整轮候选。
+                degraded_batches += 1
+                degradation_reason = str(e)
+                logger.error(
+                    f"LLM 异常判定失败（第 {bi}/{len(batches)} 批），该批降级为待审核: {e}"
+                )
+                anomalies.extend(self._pending_batch(batch))
+                continue
 
-        anomalies = result.get("anomalies", [])
+            # 分批只影响「怎么送」，不影响「送多少」——结果按批合并，总数守恒
+            anomalies.extend(result.get("anomalies", []))
+
         confirmed = [a for a in anomalies if a.get("is_anomaly")]
         self._log_step(
             "anomaly_detect",
             len(statistical_candidates),
             len(confirmed),
             {
-                "llm_called": True,
+                "llm_called": degraded_batches < len(batches),
+                "degraded": degraded_batches > 0,
+                "batches": len(batches),
+                "degraded_batches": degraded_batches,
                 "candidates": len(statistical_candidates),
                 "confirmed_anomalies": len(confirmed),
+                "error": degradation_reason,
             },
         )
         return anomalies
+
+    @staticmethod
+    def _pending_batch(batch: list[dict]) -> list[dict]:
+        """把一批候选标成待人工审核。
+
+        待审核不等于积压：只有统计层筛出来的候选才需要人工，占总数据量的千分之一
+        量级；而且记录带字段和值，人工看到的是「第 137 行、加班时长、超出正常范围」，
+        不用从头翻表。
+        """
+        return [
+            {
+                "record_index": c["record_index"],
+                "field": c["field"],
+                "value": c["value"],
+                "is_anomaly": False,
+                "reason": f"LLM异常降级，待审核: {c['field']} 当前值 {c['value']} 超出 IQR 统计范围",
+                "pending_review": True,
+            }
+            for c in batch
+        ]
 
     def _iqr_detect(self, df: pd.DataFrame) -> list[dict]:
         """IQR 方法初筛异常值候选，按偏离程度排序后取 top-N。"""
@@ -258,13 +293,16 @@ class CleaningPipeline:
         return "\n".join(lines)
 
     def _summarize_candidates(self, candidates: list[dict]) -> str:
-        """将候选异常转为 LLM 可读的文本。
+        """将一批候选异常转为 LLM 可读的文本。
+
+        传进来的已经是切好的一批，这里不做任何截断——候选按偏离度排完序之后，
+        不能按数量截断：排序应该决定「先看谁」，不该决定「看谁」。
 
         刻意用模糊描述替代精确数值（如"偏高"、"极低"），避免 LLM 在 reason
         中忍不住引用数字，与 ANOMALY_PROMPT 的"严禁数字"要求保持一致性。
         """
         lines = []
-        for c in candidates[:30]:
+        for c in candidates:
             deviation = c.get("deviation", 0)
             if deviation >= 3.0:
                 level = "严重偏离正常范围"
