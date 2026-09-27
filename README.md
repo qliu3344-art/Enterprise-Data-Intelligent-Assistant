@@ -23,7 +23,7 @@
 | **后端框架** | FastAPI（异步高性能，自动生成 Swagger 文档） |
 | **ORM** | SQLAlchemy 2.0 + PyMySQL |
 | **数据处理** | Pandas + NumPy |
-| **LLM** | 通义千问 qwen-turbo（DashScope） |
+| **LLM** | 通义千问 qwen-flash（DashScope） |
 | **Agent 框架** | LangChain 1.x + LangGraph（ReAct Agent + SqliteSaver Checkpointer） |
 | **向量检索** | ChromaDB + BGE（sentence-transformers）+ BM25 混合检索 |
 | **PDF 提取** | pdfplumber + LLM 结构化 |
@@ -138,6 +138,21 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 降级分四层：**L0** 参数防线（标签单 token 启动校验，失败即拒绝启动）→ **L1** 重试（预算按端到端 P99 反推，只重试超时/限流/5xx，带随机抖动）→ **L2** 规则降级（匹配**用户问题**的关键词表，`confidence` 被常量卡在阈值之下，强制走安全网）→ **L3** 兜底与熔断（砍掉需要 LLM 的那一步，保留 SQL 执行和向量检索）。
 
 > 低置信度**不是降级，是路由**：手里还有模型给出的真实分布，只是决定不信它。真正的降级发生在**连分布都没拿到**的时候。
+
+## 🧭 模型选型：先划掉不合格的，再比价格
+
+第一道筛子不是「谁更强」，是**「谁支持 logprobs」**——整套意图路由建在首 token 分布上，不支持就直接出局，多便宜都没用。
+
+| 候选 | 结论 | 依据 |
+|---|---|---|
+| DeepSeek V3 / R1 | **出局** | 官方 API 未提供 logprobs：推理模型文档明确列为不支持，**且设置了不报错、静默忽略**；V3.2 实测只返回 `0 / -9999`、候选列表恒空。「不报错的错」正是本项目最忌讳的失败模式 |
+| Kimi / GLM | 存疑 | 第三方网关称支持，官方文档未列，不作为选型依据 |
+| 豆包 Seed 1.6 | 可用 | 文档支持 `logprobs` / `top_logprobs`（范围 `[0,20]`），但需换 SDK 与 tokenizer，而单价与 Qwen 同档，收益为零 |
+| **qwen-flash** | **选用** | 同 SDK、同返回结构，零改造；实测 logprobs、function calling、延迟三项均不输原模型 |
+
+**选 qwen-flash 而不选更大的 qwen-max**，是因为路由模型考的不是「回答得多好」，而是**「分布给得多完整」**：实测 qwen-max 只返回 1 个候选（`top_logprobs=5` 被忽略），`margin` 与 `label_mass` 会一起退化成常量 `1.0`——**不报错，直接失去诊断能力**。模型越大越好这个直觉，在路由这一层是错的。
+
+成本上，本项目的调用以长 prompt 为主（Agent 历史、清洗批次候选、RAG 文档块），**输入单价才是主成本杠杆**：qwen-flash 输入 0.15 元/百万 token（qwen-turbo 0.367），输出 1.5（1.468），缓存命中输入仅 0.03。百炼文档亦已明示 qwen-turbo 不再更新、建议迁移。
 
 ## 📁 项目结构
 

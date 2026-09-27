@@ -119,7 +119,7 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 | Web 框架 | FastAPI | 异步高性能，自动生成 Swagger 文档 |
 | ORM | SQLAlchemy 2.0 + PyMySQL | MySQL 连接与批量操作 |
 | 数据处理 | Pandas + NumPy | 数据清洗和转换 |
-| LLM | 通义千问 qwen-turbo（DashScope） | 表头对齐、异常判定、PDF 提取、Agent、RAG 答案生成 |
+| LLM | 通义千问 qwen-flash（DashScope） | 表头对齐、异常判定、PDF 提取、Agent、RAG 答案生成 |
 | Agent 框架 | LangChain 1.x + LangGraph | ReAct Agent + SqliteSaver Checkpointer |
 | 向量检索 | ChromaDB + sentence-transformers (BGE) | RAG 文档向量化与检索 |
 | 关键词检索 | rank-bm25 | BM25 混合检索 |
@@ -540,7 +540,7 @@ CREATE TABLE pipeline_logs (
 | `MYSQL_PORT` | 否 | `3306` | MySQL 端口 |
 | `MYSQL_USER` | 否 | `root` | MySQL 用户名 |
 | `MYSQL_DB` | 否 | `data_processing_platform` | 数据库名 |
-| `LLM_MODEL` | 否 | `qwen-turbo` | LLM 模型名 |
+| `LLM_MODEL` | 否 | `qwen-flash` | LLM 模型名 |
 
 实际代码见 `app/config.py` 中的 `Settings` 类。
 
