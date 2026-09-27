@@ -158,6 +158,8 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 
 成本上，本项目的调用以长 prompt 为主（Agent 历史、清洗批次候选、RAG 文档块），**输入单价才是主成本杠杆**：qwen-flash 输入 0.15 元/百万 token，是 qwen-turbo（0.3~0.367）的一半或更低；输出 1.5，与 turbo 同期快照的 1.468 基本持平；缓存命中输入仅 0.03。它同时也是 qwen-turbo 的官方继任者（2025-07-28 发布）。
 
+**迁移时间线**：项目 2025 年 5 月启动时用的是当时现役的 qwen-turbo；qwen-flash 于 2025 年 7 月 28 日发布后迁移过去，输入成本随之减半。换模型不是改个配置字符串就完事——路由依赖 tokenizer 与返回体的结构，迁移前先实测了候选模型的 logprobs 与 function calling 行为，再靠启动时的标签单 token 校验兜住分词差异。
+
 ## 📁 项目结构
 
 ```
