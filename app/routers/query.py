@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.logger import logger
+from app.services.exec_check import inspect_execution
 from app.services.intent_router import INTENT_CONFIDENCE_THRESHOLD, classify_intent
 from app.services.rag.service import ask_rag
 from app.services.skills.hybrid import _fuse_hybrid_answer
@@ -63,6 +64,35 @@ async def _route_intent(question: str) -> tuple[str, dict, float]:
     return intent, route, (time.perf_counter() - t) * 1000
 
 
+async def _exec_check_and_escalate(
+    question: str, mode: str, answer: str, tool_calls: list
+) -> tuple[str, str, dict, list]:
+    """执行期校验：判定走错路，就补跑文档那一支再交付。
+
+    这是路由安全网的下一棒，不是它的替代品——阈值管「能事前识别的不确定性」
+    （规则降级路径 + 犹豫区），这里管「事前识别不了的」，也就是模型很自信地错。
+    两者接力，中间不重叠。
+
+    Returns:
+        (答案, 模式, 校验结论, 文档来源)。模式从 agent 变成 hybrid 就说明升过级。
+    """
+    verdict = inspect_execution(question, tool_calls, answer)
+    if verdict["reference"]:
+        logger.info(f"回指校验存疑（只标记不拦截）: {question[:60]}")
+
+    # hybrid 本身就跑过文档那一支，数据路走错也已经被它兜住了，不重复补跑
+    if not verdict["blocked"] or mode != "agent":
+        return answer, mode, verdict, []
+
+    reason = "；".join(verdict["structure"]) or "结果为空，而问题预设了答案非空"
+    logger.info(f"执行期校验判定走错路（{reason}），补跑文档支路: {question[:60]}")
+
+    rag = await asyncio.to_thread(ask_rag, question)
+    sources = rag.get("sources", [])
+    fused = await asyncio.to_thread(_fuse_hybrid_answer, question, answer, sources)
+    return fused, "hybrid", verdict, sources
+
+
 def _save_trace(
     db: Session,
     trace_id: str,
@@ -77,6 +107,7 @@ def _save_trace(
     iterations: int = 0,
     tools_used: list | None = None,
     tool_calls: list | None = None,
+    exec_check: dict | None = None,
 ):
     """写入对话历史（chat_history）+ 查询 trace（query_trace）。
 
@@ -84,12 +115,17 @@ def _save_trace(
 
     注意：latency_ms 是端到端墙钟，stage_timings 是分段诊断。hybrid 路径下
     Agent 与检索是并行的，两段耗时重叠，加总不等于总耗时——这也是为什么要分开存。
+
+    exec_check 是执行期校验的结论，**必须在升级之后取**：只有 intent 和 mode
+    分叉（data_query → hybrid）才说明这条走的是「路由判错、事后纠回来」的路，
+    提前取就只剩一个「都通过了」，等于把飞轮唯一那份监督样本抹掉。
     """
     from app.models.chat_history import ChatHistory
     from app.models.query_trace import QueryTrace
 
     tools_used = tools_used or []
     tool_calls = tool_calls or []
+    exec_check = exec_check or {}
     try:
         db.add(ChatHistory(session_id=session_id, role="user", content=question))
         db.add(ChatHistory(session_id=session_id, role="assistant", content=answer))
@@ -111,6 +147,7 @@ def _save_trace(
                 label_mass=round(route.get("label_mass", 0.0), 6),
                 route_margin=round(route.get("margin", 0.0), 6),
                 top_logprobs=route.get("top5", {}),
+                exec_check=exec_check,
                 latency_ms=round(latency_ms, 1),
             )
         )
@@ -147,12 +184,28 @@ async def natural_language_query(body: QueryRequest, db: Session = Depends(get_d
     result = await skill.handler(body.question, thread_id)
     stage_timings["agent" if result.mode == "agent" else "retrieval"] = (
         time.perf_counter() - t_skill
-    ) * 1000
+    )
+
+    # 3. 执行期校验：路由判错、且事后才看得出来时，补跑文档支路（hybrid 已跑过，不重复）
+    t_exec = time.perf_counter()
+    result.answer, result.mode, verdict, rag_sources = await _exec_check_and_escalate(
+        body.question, result.mode, result.answer, result.tool_calls
+    )
+    stage_timings["exec_check"] = (time.perf_counter() - t_exec) * 1000
+    # 整条结论都存，含一段没命中的那些：命中率的分母靠它们，只留升级过的行
+    # 只能算出「升了多少次」，算不出「查了多少条」。
+    result.extra["exec_check"] = verdict
+    if rag_sources:
+        result.extra["rag_data"] = {
+            "chunks_count": len(rag_sources),
+            "sources": rag_sources,
+        }
 
     _save_trace(
         db, trace_id, thread_id, body.question, result.answer, intent, result.mode,
         (time.time() - t0) * 1000, stage_timings, route,
         result.iterations, result.tools_used, result.tool_calls,
+        exec_check=result.extra.get("exec_check"),
     )
     logger.info(f"查询完成 trace_id={trace_id} total={int(time.time() - t0)}s")
 
@@ -186,6 +239,20 @@ async def natural_language_query(body: QueryRequest, db: Session = Depends(get_d
             "iterations": result.iterations,
             "tools_used": result.tools_used,
         }
+
+    # 管道诊断跟着响应出去（新增键，不动上面三条分支的既有字段）。
+    # 离线评测走的就是这个 handler，报告里要算升级率 / 拦截率 / 命中归因，
+    # 就得拿到**这一次**路由的真实结论。让评测自己再调一遍 classify_intent
+    # 反推是不行的：那是另一次采样，标签本身有 2.7~5.9% 的翻转率，
+    # 反推出来的不是同一件事，而这正是「仪器测的不是真机」那个毛病。
+    data["diagnostics"] = {
+        "route": {
+            "predicted": route.get("intent", ""),  # 阈值升级之前的原判
+            "confidence": round(route.get("confidence", 0.0), 6),
+            "path": route.get("path", ""),
+        },
+        "exec_check": result.extra.get("exec_check", {}),
+    }
 
     return {"code": 200, "message": "ok", "data": data}
 
@@ -258,6 +325,9 @@ async def natural_language_query_stream(
             "iterations": 0,
             "tools_used": [],
             "tool_calls": [],
+            # 空 dict = 这次压根没跑校验（doc_query / hybrid 分支就是），
+            # 和 {"vocab": False}（跑了但词表读不到）是两回事，别合并。
+            "exec_check": {},
         }
         try:
             # 1. 意图路由（logprobs 真实分布 + 低置信度升级安全网）
@@ -277,6 +347,28 @@ async def natural_language_query_stream(
                         state["iterations"] = evt["data"].get("iterations", 0)
                         state["tools_used"] = evt["data"].get("tools_used", [])
                         state["tool_calls"] = evt["data"].get("tool_calls", [])
+                        # 校验放在这里、不等循环结束：answer 之后 Agent 还要跑一次
+                        # _persist_conventions（可能是一次 LLM 调用），等循环结束再判，
+                        # 用户会平白多等那一次调用。
+                        t_exec = time.perf_counter()
+                        state["answer"], state["mode"], state["exec_check"], sources = (
+                            await _exec_check_and_escalate(
+                                body.question, "agent",
+                                state["answer"], state["tool_calls"],
+                            )
+                        )
+                        stage_timings["exec_check"] = (
+                            time.perf_counter() - t_exec
+                        ) * 1000
+                        payload = dict(evt["data"], content=state["answer"])
+                        if sources:
+                            payload["mode"] = "hybrid"
+                            yield _sse("rag_ready", {
+                                "chunks_count": len(sources),
+                                "top_doc": sources[0].get("doc_title", ""),
+                            })
+                        yield _sse("answer", payload)
+                        continue
                     yield _sse(evt["event"], evt["data"])
 
             elif intent == "doc_query":
@@ -367,6 +459,7 @@ async def natural_language_query_stream(
                     state["mode"], (time.perf_counter() - t_start) * 1000,
                     stage_timings, route, state["iterations"],
                     state["tools_used"], state["tool_calls"],
+                    exec_check=state["exec_check"],
                 )
             except Exception as e:
                 logger.warning(f"流式 trace 写入失败（不影响查询）trace_id={trace_id}: {e}")

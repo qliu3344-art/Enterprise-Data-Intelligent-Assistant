@@ -66,6 +66,7 @@ def summarize_messages(messages) -> str:
             dashscope_api_key=settings.DASHSCOPE_API_KEY,
             temperature=0.0,
             max_tokens=200,
+            model_kwargs={"request_timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS},
         )
         resp = llm.invoke([HM(content=prompt)])
         summary = resp.content.strip()

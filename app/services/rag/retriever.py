@@ -53,7 +53,7 @@ class HybridRetriever:
         self._bm25: BM25Okapi | None = None
         self._corpus: List[str] = []
         self._metadatas: List[dict] = []
-        self._text_to_idx: dict[str, int] = {}  # 文本 → corpus index 快速反查
+        self._id_to_idx: dict[int, int] = {}  # chunk id → corpus index 快速反查
         self._initialized = False
 
     def _ensure_initialized(self):
@@ -61,20 +61,21 @@ class HybridRetriever:
         if self._initialized:
             return
 
-        from app.services.rag.vector_store import get_collection
+        from app.services.rag.vector_store import dump_corpus
 
-        collection = get_collection()
-        if collection.count() == 0:
-            logger.warning("ChromaDB 为空，请先执行 /rag/reindex")
+        rows = dump_corpus()
+        if not rows:
+            logger.warning("doc_chunks 为空，请先执行 /rag/reindex")
             self._initialized = True
             return
 
-        result = collection.get(include=["documents", "metadatas"])
-        self._corpus = result["documents"] or []
-        self._metadatas = result["metadatas"] or []
+        self._corpus = [r["text"] for r in rows]
+        self._metadatas = [r["metadata"] for r in rows]
 
-        # 构建文本 → 索引反查表，向量结果回映射从 O(n²) → O(n)
-        self._text_to_idx = {text: i for i, text in enumerate(self._corpus)}
+        # 按 id 反查，不能用文本做键：chunker 的重叠条款逻辑和「## 第X章（续）」
+        # 会造出完全相同的文本，文本做键时后写的赢，向量命中会被静默解析到
+        # 错误的行、挂上错误的 metadata。现在 chunk 有真主键了，用 id。
+        self._id_to_idx = {r["id"]: i for i, r in enumerate(rows)}
 
         tokenized = [_tokenize(doc) for doc in self._corpus]
         self._bm25 = BM25Okapi(tokenized)
@@ -107,12 +108,18 @@ class HybridRetriever:
         query_vec = embed_query(query)
         vector_hits = vector_search(query_vec, top_k=20)
 
-        # 向量结果回映射 corpus index（O(1) 反查，代替原来的 O(n) 线性搜索）
+        # 向量结果回映射 corpus index（O(1) 反查）
         vector_ranked = []
         for hit in vector_hits:
-            idx = self._text_to_idx.get(hit["text"])
-            if idx is not None:
-                vector_ranked.append((idx, hit["score"]))
+            idx = self._id_to_idx.get(hit.get("id"))
+            if idx is None:
+                # 命中不在 BM25 语料里 —— search() 与 dump_corpus() 的过滤
+                # 条件不一致时会出现。旧代码在这里静默丢弃，出了问题查不到。
+                logger.warning(
+                    f"向量命中 id={hit.get('id')} 不在 BM25 语料中，已丢弃"
+                )
+                continue
+            vector_ranked.append((idx, hit["score"]))
 
         # —— RRF 融合 ——
         k = 60
@@ -142,7 +149,7 @@ class HybridRetriever:
         self._bm25 = None
         self._corpus = []
         self._metadatas = []
-        self._text_to_idx = {}
+        self._id_to_idx = {}
         self._initialized = False
         logger.info("BM25 索引已刷新")
 

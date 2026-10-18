@@ -104,9 +104,13 @@ def _date_condition(model, date_start: str, date_end: str):
     每个候选来源内部先满足 [start, end] 整个区间，再跨来源取并集——
     否则「>= start」和「<= end」会被 OR 拆开，匹配到区间外的记录。
     """
-    from sqlalchemy import and_, func, or_
+    from sqlalchemy import String, and_, cast, func, or_
 
-    sources = [model.record_date]
+    # record_date 是 date 列，而区间两端是 ISO 字符串。MySQL 会静默把 date
+    # 转成字符串再比；PostgreSQL 不会——date >= varchar 直接报
+    # "operator does not exist"。显式 CAST 成文本，与下面 JSON 那几路的
+    # 字典序比较保持一致（ISO-8601 的字典序就是时间序）。
+    sources = [cast(model.record_date, String)]
     for key in DATE_KEYS:
         # 归一化分隔符后再比，否则斜杠格式的字典序会判错
         sources.append(func.replace(model.business_data[key].as_string(), "/", "-"))

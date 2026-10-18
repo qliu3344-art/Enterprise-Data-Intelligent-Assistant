@@ -226,7 +226,7 @@ def review_mapping(source_id: int, mapping_id: int, db: Session = Depends(get_db
     if not mapping:
         raise NotFoundException(f"映射不存在: id={mapping_id}")
 
-    mapping.manual_reviewed = 1
+    mapping.manual_reviewed = True
     db.commit()
 
     logger.info(f"表头映射已人工确认: source={source_id}, mapping={mapping_id}")

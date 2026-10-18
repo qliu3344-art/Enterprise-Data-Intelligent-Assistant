@@ -5,14 +5,22 @@
 
 重试预算由端到端延迟反推，不拍脑袋定「重试 3 次」：
   用户可接受的 P99 约 3 秒，hybrid 安全网本身要 1.5~2 秒，
-  留给意图路由的预算约 1 秒 —— 即单次 timeout 500ms、最多 2 次。
+  留给意图路由的预算约 1 秒 —— 即单次 timeout 950ms、最多 2 次。
   超时预算用完就判定失败，进入 L2 规则降级。不能为了省一次 hybrid 的钱把整个
   请求拖死，那是典型的局部最优。
 
-⚠ 500ms 这条线是量出来的，不是除出来的。一次托管 LLM 调用的延迟大头在
-  「首 token 之前」（排队 + prefill），实测地板约 300ms；max_tokens=1 省的是
-  首 token 之后那一段，压不动这个地板。所以单次配额必须高于地板，否则每次调用
-  都会在超时处被掐断，L2 从兜底变成默认——整个 logprobs 方案等于没上。
+⚠ 这条线是量出来的，不是除出来的。一次托管 LLM 调用的延迟大头在
+  「首 token 之前」（排队 + prefill），实测地板 2025 年定这条时约 300ms；
+  max_tokens=1 省的是首 token 之后那一段，压不动这个地板。所以单次配额必须高于
+  地板，否则每次调用都会在超时处被掐断，L2 从兜底变成默认——整个 logprobs 方案
+  等于没上。
+
+  ⚠️ 2026-10-07~09 这句话被原样验证了一遍：端点地板漂到约 490ms（三档模型一致），
+  正好压在当时的 500ms 配额上，降级率从 3.5% 涨到 37%。地板是会动的，配额得跟着抬。
+
+⚠ 超时不重试。预算内没返回，说明这个端点此刻就是慢，重试只是在同一个慢端点上
+  再等一整个预算、把请求拖成两倍（实测 500+20+500 ≈ 1020ms）。只有「快速失败」
+  ——连不上、429、5xx——才值得换一次，那种失败通常毫秒级返回，重试不占预算。
 """
 
 import random
@@ -23,8 +31,8 @@ from concurrent.futures import TimeoutError as FuturesTimeoutError
 from app.logger import logger
 
 # 意图路由的重试预算 —— 常量，由上面那段推导定死，调用点不允许随手改
-ROUTE_TIMEOUT_SECONDS = 0.5  # 单次调用超时；实测地板约 300ms，留出余量
-ROUTE_MAX_ATTEMPTS = 2  # 含首次；500 + 20 + 500 ≈ 1020ms，落在 1s 预算内
+ROUTE_TIMEOUT_SECONDS = 0.95  # 单次调用超时；地板 2026-10 实测约 490ms，留出余量
+ROUTE_MAX_ATTEMPTS = 2  # 含首次；只对「快速失败」生效，超时不重试（见 RouteBudgetTimeout）
 ROUTE_BASE_DELAY = 0.02
 
 # 可重试错误的关键词（匹配异常信息字符串）
@@ -40,6 +48,15 @@ _JITTER_RATIO = 0.3
 _executor: ThreadPoolExecutor | None = None
 
 
+class RouteBudgetTimeout(TimeoutError):
+    """路由自己的超时预算用完了 —— 和 requests 那类网络超时不是一回事。
+
+    网络超时（连不上、读不到）值得换个连接重试；这个不值得：调用已经在一个慢
+    端点上耗掉了整个预算，再等一个预算只是把请求拖成两倍。这条区分是从 2026-10
+    那次端点变慢里来的——地板压到配额上时，重试从「补救」变成了「延迟翻倍」。
+    """
+
+
 def _get_executor() -> ThreadPoolExecutor:
     global _executor
     if _executor is None:
@@ -49,6 +66,8 @@ def _get_executor() -> ThreadPoolExecutor:
 
 def is_retryable(exc: Exception) -> bool:
     """判断异常是否值得重试。"""
+    if isinstance(exc, RouteBudgetTimeout):
+        return False
     if isinstance(exc, (TimeoutError, ConnectionError)):
         return True
     msg = str(exc).lower()
@@ -59,7 +78,7 @@ def _call_with_timeout(fn, args: tuple, kwargs: dict, timeout: float):
     """在独立线程里执行 fn 并施加超时。
 
     超时后线程无法被强杀（Python 没有安全的线程中断），它会自己跑完、结果丢弃。
-    对 250ms 量级的预算来说这个代价可以接受——换来的是「超时预算用完就判失败」
+    对亚秒级的预算来说这个代价可以接受——换来的是「超时预算用完就判失败」
     这条规则真的生效，而不是让请求慢慢拖死。
     """
     future = _get_executor().submit(fn, *args, **kwargs)
@@ -67,7 +86,7 @@ def _call_with_timeout(fn, args: tuple, kwargs: dict, timeout: float):
         return future.result(timeout=timeout)
     except FuturesTimeoutError:
         future.cancel()
-        raise TimeoutError(f"单次调用超过 {timeout}s 预算")
+        raise RouteBudgetTimeout(f"单次调用超过 {timeout}s 预算")
 
 
 def retry_call(

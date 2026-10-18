@@ -39,6 +39,11 @@ class QueryTrace(Base):
     label_mass = Column(Float, default=0.0, comment="三个合法标签概率之和（prompt 约束健康度）")
     route_margin = Column(Float, default=0.0, comment="top1 与 top2 的概率差")
     top_logprobs = Column(JSON, default=dict, comment="首 token 的 top5 原始分布")
+    # 执行期校验的三段结论。存它不是为了审计，是为了归因：intent=data_query +
+    # mode=hybrid 只说明升过级，说明不了是哪一段命中的，而结构/空集/回指对应
+    # 三种完全不同的修法。vocab 那一位是承重的——词表读不到时结构校验整段没跑，
+    # 但 structure 同样是 []，和「查过、干净」长得一模一样，只有它能分开。
+    exec_check = Column(JSON, default=dict, comment="执行期校验结论（结构/空集/回指/vocab）")
     latency_ms = Column(Float, default=0.0, comment="端到端耗时（毫秒）")
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")
 
