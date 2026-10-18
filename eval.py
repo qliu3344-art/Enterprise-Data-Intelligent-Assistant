@@ -6,6 +6,10 @@
   3. RAG 检索命中率     — 3a: 关键词命中（基线） + 3b: LLM 语义相关性（主指标）
   4. 答案质量 LLM 评分  — LLM-as-Judge 对最终答案打 1-5 分
 
+另有一块**不进加权**的「管道诊断」：量路由与它两道安全网在真管道里的行为
+（事前升级率 / 执行期升级率 / 校验命中归因）。它和四维不同源——四维只吃答案
+文本，它吃的是 intent / mode / exec_check——所以不能混进总分。
+
 用法:
     python eval.py                        # 全量评估
     python eval.py --category data_query  # 只测某类
@@ -14,6 +18,7 @@
 """
 
 import argparse
+import asyncio
 import json
 import sys
 import time
@@ -84,21 +89,34 @@ RAG_JUDGE_PROMPT = """你是一个检索质量评估专家。判断以下文档�
 只输出 JSON，不要其他内容。"""
 
 
+def resolve_dataset_path(dataset_path: str = None) -> Path:
+    """解析数据集路径（默认项目根目录下的 eval_dataset.json）。"""
+    return Path(dataset_path) if dataset_path else PROJECT_ROOT / "eval_dataset.json"
+
+
 def load_dataset(dataset_path: str = None) -> list[dict]:
     """加载评估数据集。"""
-    if dataset_path is None:
-        dataset_path = PROJECT_ROOT / "eval_dataset.json"
-    with open(dataset_path, "r", encoding="utf-8") as f:
+    with open(resolve_dataset_path(dataset_path), "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 # —————— 维度 1: 意图分类 ——————
-def eval_intent(item: dict) -> dict:
-    """评估意图分类准确率。"""
+def eval_intent(item: dict) -> dict | None:
+    """评估意图分类准确率。
+
+    `expected_intent` 为空的条目不参与评分，返回 None。
+
+    这类条目是 category=edge_case（问的是系统能力之外的东西），三个意图标签里
+    没有「越界/拒答」这一档，所以原先填的 `data_query` 只是**占位值**——照着算的话
+    它们答什么都会被判错，等于把不可评分的样本混进了分母。要真评它们得先加第四档。
+    """
+    expected = item.get("expected_intent", "")
+    if not expected:
+        return None
+
     from app.services.intent_router import classify_intent
 
     predicted = classify_intent(item["question"])
-    expected = item.get("expected_intent", "")
     correct = predicted["intent"] == expected
 
     return {
@@ -142,7 +160,7 @@ def _check_tool_args(expected_args: dict, used_calls: list[dict], tool_name: str
     }
 
 
-def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | None:
+async def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | None:
     """评估 Agent 工具选择准确率。需要数据库中有数据。
 
     选对工具只是第一步——同一个工具换组参数就是另一次查询，所以数据集
@@ -157,7 +175,7 @@ def eval_tool_selection(item: dict, thread_id: str = "eval_default") -> dict | N
     expected_args = item.get("expected_args", {})
 
     try:
-        result = run_query(item["question"], thread_id=thread_id)
+        result = await run_query(item["question"], thread_id=thread_id)
         used_tools = set(result.get("tools_used", []))
         used_calls = result.get("tool_calls", [])
     except Exception as e:
@@ -289,8 +307,9 @@ def eval_rag_semantic(item: dict) -> dict | None:
     )
 
     try:
+        # 裁判必须换模型：和生成答案的模型同源会引入自我偏好
         llm = ChatTongyi(
-            model=settings.LLM_MODEL,
+            model=settings.LLM_MODEL_JUDGE,
             dashscope_api_key=settings.DASHSCOPE_API_KEY,
             temperature=0.1,
             max_tokens=400,
@@ -345,8 +364,9 @@ def eval_answer_quality(item: dict, answer: str) -> dict:
     )
 
     try:
+        # 裁判必须换模型：和生成答案的模型同源会引入自我偏好
         llm = ChatTongyi(
-            model=settings.LLM_MODEL,
+            model=settings.LLM_MODEL_JUDGE,
             dashscope_api_key=settings.DASHSCOPE_API_KEY,
             temperature=0.1,
             max_tokens=300,
@@ -371,38 +391,54 @@ def eval_answer_quality(item: dict, answer: str) -> dict:
 
 
 # —————— 获取答案（用于 LLM Judge） ——————
-def get_answer(item: dict, thread_id: str = "eval_default") -> str:
-    """根据意图类型获取答案。每条用独立 thread_id 避免测试间状态污染。"""
-    from app.services.intent_router import classify_intent
+async def get_answer(item: dict, thread_id: str = "eval_default") -> tuple[str, dict]:
+    """取答案：调 /query 的 handler 本体，不自己拼零件。每条用独立 session_id。
 
-    intent = classify_intent(item["question"])["intent"]
+    旧版在这里直调 classify_intent + ask_rag/run_query，拼出来的和真机差三处：
+      · 不过 _route_intent  → 阈值升级在离线根本不存在
+      · 从不调 _exec_check_and_escalate → 执行期校验在离线不可见
+      · hybrid 只跑 Agent   → 不跑检索、不融合
+    于是「离线的静默错误率」量的是**一条没有安全网的管道**：报告的数和线上的
+    行为是两回事。改成直调 handler 之后，评测和线上跑的是同一段代码。
 
+    维度 1（意图分类准不准）仍然直调 classify_intent——那个问题要的就是分类器
+    原值，不是升级后的结果。同一份输出服务两个目的，必须分开取。
+
+    ⚠️ 副作用：handler 会写 chat_history 和 query_trace。session_id 统一用
+    `eval_` 前缀，事后统计飞轮样本时按 `session_id NOT LIKE 'eval_%'` 过滤。
+
+    Returns:
+        (答案, 响应 data)。data 里的 `diagnostics` 带 route / exec_check，
+        管道诊断那块靠它算。
+    """
+    from app.database import SessionLocal
+    from app.routers.query import QueryRequest, natural_language_query
+
+    db = SessionLocal()
     try:
-        if intent == "doc_query":
-            from app.services.rag.service import ask_rag
-            result = ask_rag(item["question"])
-            return result.get("answer", "")
-        elif intent == "hybrid":
-            from app.services.query_agent import run_query
-            result = run_query(item["question"], thread_id=thread_id)
-            return result.get("answer", "")
-        else:
-            from app.services.query_agent import run_query
-            result = run_query(item["question"], thread_id=thread_id)
-            return result.get("answer", "")
+        resp = await natural_language_query(
+            QueryRequest(question=item["question"], session_id=thread_id), db
+        )
+        data = resp.get("data", {}) or {}
+        return data.get("answer", ""), data
     except Exception as e:
-        return f"[获取答案失败: {e}]"
+        return f"[获取答案失败: {e}]", {}
+    finally:
+        SessionLocal.remove()
 
 
 # —————— 主评估流程 ——————
-def run_eval(
+async def run_eval(
     dataset: list[dict],
     skip_agent: bool = False,
     skip_judge: bool = False,
     skip_rag_semantic: bool = False,
     category_filter: str = None,
+    dataset_path: str = None,
 ):
     """执行全量评估并输出报告。"""
+    from app.config import settings
+
     items = dataset
     if category_filter:
         items = [it for it in items if it.get("category") == category_filter]
@@ -410,7 +446,15 @@ def run_eval(
 
     results = {
         "meta": {
+            # 模型和集子必须进报告：一份评测报告得能自证它跑在哪个模型、
+            # 哪个集子上，否则换了模型之后只能靠提交时间反推。
+            # 三个模型位分开记：intent 跑路由、tool_selection 跑主力、
+            # rag_semantic 与 answer_quality 跑裁判，只记一个会把报告读成错的。
+            "dataset": resolve_dataset_path(dataset_path).name,
             "dataset_size": len(items),
+            "model": settings.LLM_MODEL,
+            "model_router": settings.LLM_MODEL_ROUTER,
+            "model_judge": settings.LLM_MODEL_JUDGE,
             "eval_time": datetime.now().isoformat(),
             "skip_agent": skip_agent,
             "skip_judge": skip_judge,
@@ -421,6 +465,8 @@ def run_eval(
         "rag_retrieval": [],
         "rag_semantic": [],
         "answer_quality": [],
+        # 管道诊断（不进加权），见文件头说明
+        "pipeline": [],
     }
 
     t0 = time.time()
@@ -434,13 +480,16 @@ def run_eval(
         try:
             # 维度 1: 意图分类（总是执行）
             intent_result = eval_intent(item)
-            results["intent"].append(intent_result)
-            icon = "✅" if intent_result["correct"] else "❌"
-            print(f"  意图: {icon} expected={intent_result['expected']} predicted={intent_result['predicted']}")
+            if intent_result:
+                results["intent"].append(intent_result)
+                icon = "✅" if intent_result["correct"] else "❌"
+                print(f"  意图: {icon} expected={intent_result['expected']} predicted={intent_result['predicted']}")
+            else:
+                print("  意图: ⏭  未标 expected_intent，不计入准确率")
 
             # 维度 2: 工具选择（需要 DB）
             if not skip_agent:
-                tool_result = eval_tool_selection(item, thread_tool)
+                tool_result = await eval_tool_selection(item, thread_tool)
                 if tool_result:
                     results["tool_selection"].append(tool_result)
                     if "error" in tool_result:
@@ -472,17 +521,50 @@ def run_eval(
 
             # 维度 4: LLM-as-Judge
             if not skip_judge:
-                answer = get_answer(item, thread_judge)
+                answer, pipe = await get_answer(item, thread_judge)
+                # 管道诊断：只记路由与校验的结论，不重复存答案（答案在 quality 里）。
+                # 用 id 做 join 键——question 理论上会重复（数据集里有几组近义变体），
+                # id 不会。诊断取自 handler 自己那一次路由，不是评测再调一遍反推的。
+                diag = pipe.get("diagnostics") or {}
+                route_diag = diag.get("route") or {}
+                results["pipeline"].append({
+                    "id": item.get("id"),
+                    "category": item.get("category", ""),
+                    "question": item["question"],
+                    # predicted = 阈值升级前的原判，intent = 升级后的最终意图。
+                    # 两者差一个 hybrid 就是事前升级；这个判据在这里是精确的，
+                    # 不像只看 intent 那样分不出「本来判成 hybrid」和「被推去 hybrid」。
+                    "predicted": route_diag.get("predicted", ""),
+                    "confidence": route_diag.get("confidence", 0.0),
+                    # 走的是 logprobs 还是 L2 规则。这是本次诊断唯一能把
+                    # 「模型不确定」和「路由超时降级」分开的字段——两者都是低分。
+                    "path": route_diag.get("path", ""),
+                    "intent": pipe.get("intent", ""),
+                    "mode": pipe.get("mode", ""),
+                    "exec_check": diag.get("exec_check", {}),
+                })
                 quality = eval_answer_quality(item, answer)
+                # 带上 category：汇总时要把边界类摘出去（见下方「答案质量」那段）
+                quality["category"] = item.get("category", "")
+                # 问题和答案原文必须进报告。这两个字段不参与打分，但少了它们，
+                # 报告落到磁盘之后就无法自证：裁判打了低分，你不知道它当时看的是什么；
+                # 答案里编了个年份，你也没法回头查。以前只能靠「按位置对齐数据集」
+                # 反查题目，而数据集一换、一加 --category 筛选，对齐就断了。
+                # 不做截断——截断是静默的，宁可报告大一点。
+                quality["question"] = item["question"]
+                quality["answer"] = answer
                 results["answer_quality"].append(quality)
                 print(f"  质量: overall={quality['overall']} (r={quality['relevance']} c={quality['completeness']} a={quality['accuracy']})")
 
         except Exception as e:
             print(f"  ❌ 评估失败: {e}")
-            results["intent"].append({
-                "question": q, "expected": item.get("expected_intent", ""),
-                "predicted": "ERROR", "correct": False, "error": str(e),
-            })
+            # 没标 expected_intent 的条目本就不参与评分，出错也不能记进来，
+            # 否则会从这条路绕回分母里（见 eval_intent 的说明）。
+            if item.get("expected_intent"):
+                results["intent"].append({
+                    "question": q, "expected": item.get("expected_intent", ""),
+                    "predicted": "ERROR", "correct": False, "error": str(e),
+                })
 
         print()
 
@@ -560,16 +642,66 @@ def run_eval(
         print(f"📌 RAG 语义命中率: 无测试用例（跳过）")
 
     # 答案质量
+    # 边界类（越权 / 无据 / 写入）不进这个平均。它们问的是系统**该不该答**，
+    # 而 Judge 的评分标准是「答得全不全、对不对」——一段正确的拒绝（「这个我没法帮你查」）
+    # 在它眼里就是「未回答问题」，直接 1 分。混进来等于用「拒答得够不够详细」
+    # 当扣分项，把综合分往下拽，而拒答恰恰是那 80 条唯一正确的表现。
+    # 口径统一：边界类单出一项门指标，不参与四维加权。
     if results["answer_quality"]:
-        avg_overall = round(sum(r["overall"] for r in results["answer_quality"]) / len(results["answer_quality"]), 1)
-        avg_relevance = round(sum(r["relevance"] for r in results["answer_quality"]) / len(results["answer_quality"]), 1)
-        avg_completeness = round(sum(r["completeness"] for r in results["answer_quality"]) / len(results["answer_quality"]), 1)
-        avg_accuracy = round(sum(r["accuracy"] for r in results["answer_quality"]) / len(results["answer_quality"]), 1)
+        graded = [r for r in results["answer_quality"] if r.get("category") != "edge_case"]
+        edge = [r for r in results["answer_quality"] if r.get("category") == "edge_case"]
+        n = len(graded) or 1
+        avg_overall = round(sum(r["overall"] for r in graded) / n, 1)
+        avg_relevance = round(sum(r["relevance"] for r in graded) / n, 1)
+        avg_completeness = round(sum(r["completeness"] for r in graded) / n, 1)
+        avg_accuracy = round(sum(r["accuracy"] for r in graded) / n, 1)
         print(f"\n📌 LLM-as-Judge 答案质量 (1-5):")
         print(f"   综合: {avg_overall}\t相关性: {avg_relevance}\t完整性: {avg_completeness}\t准确性: {avg_accuracy}")
-        print(f"   权重: {WEIGHTS['answer_quality']}")
+        print(f"   权重: {WEIGHTS['answer_quality']}\t← 已剔除边界类 {len(edge)} 条，分母 {len(graded)}")
+        if edge:
+            edge_avg = round(sum(r["overall"] for r in edge) / len(edge), 1)
+            print(f"   边界类 {len(edge)} 条另计，平均 {edge_avg}（低分是对的：拒答不该按「答得全」打分）")
     else:
         avg_overall = 0
+
+    # —— 管道诊断（不进加权）——
+    # 四维只吃答案文本，这一块吃的是 intent / mode / exec_check，量的是
+    # 「路由和它两道安全网在真管道里干了什么」。分开列是因为它不该影响总分：
+    # 升级多了不等于答得好，只等于系统对自己不放心。
+    if results["pipeline"]:
+        rows = results["pipeline"]
+        n = len(rows)
+        # 事前升级：路由原本判了单引擎，被阈值推去 hybrid
+        pre = [r for r in rows if r["predicted"] != "hybrid" and r["intent"] == "hybrid"]
+        # 执行期升级：路由判 data_query 且自信，跑完才被校验拦回来。
+        # exec_check 只在 mode=agent 时触发，所以这里不会出现 doc_query。
+        post = [r for r in rows if r["intent"] == "data_query" and r["mode"] == "hybrid"]
+        # 分母只算真跑过校验的：exec_check 为空 = 这条压根没进 agent 支路
+        checked = [r for r in rows if r["exec_check"]]
+        blind = [r for r in checked if r["exec_check"].get("vocab") is False]
+        seg = {"结构": 0, "空集": 0, "回指": 0}
+        for r in checked:
+            v = r["exec_check"]
+            seg["结构"] += bool(v.get("structure"))
+            seg["空集"] += bool(v.get("empty"))
+            seg["回指"] += bool(v.get("reference"))
+        # 路由走的哪条路，是这次诊断的承重项。规则降级给出的 0.30/0.60/0.65/0.70
+        # 和 logprobs 的低置信**共用同一个刻度**，光看 confidence 分不出「模型不确定」
+        # 和「路由坏了」——只有 path 分得开。这一栏是判据，不是装饰。
+        degraded = [r for r in rows if r["path"] == "rule"]
+        print(f"\n📌 管道诊断（{n} 条，不进加权）:")
+        print(f"   路由路径: logprobs {n - len(degraded)} 条 / 规则降级 {len(degraded)} 条"
+              f" ({round(len(degraded) / n * 100, 1)}%)")
+        if degraded:
+            print(f"   ⚠️ 降级那批的 intent 是 L2 规则判的，不是 logprobs ——"
+                  f" 意图准确率不能按「logprobs 版」解读")
+        print(f"   事前升级（阈值 → hybrid）: {len(pre)} 条 ({round(len(pre) / n * 100, 1)}%)")
+        print(f"   执行期升级（校验 → 补跑文档）: {len(post)} 条 ({round(len(post) / n * 100, 1)}%)")
+        print(f"   校验命中归因: 结构 {seg['结构']} / 空集 {seg['空集']} / 回指 {seg['回指']}"
+              f"  ← 回指只标记，不升级")
+        if blind:
+            print(f"   ⚠️ 词表读不到、结构校验整段跳过: {len(blind)} 条"
+                  f"  ← 这批不算「已校验」，命中率的分母要刨掉")
 
     # 综合评分（RAG 维度使用语义命中率）
     overall = (
@@ -609,11 +741,23 @@ if __name__ == "__main__":
                         help="自定义数据集路径")
     args = parser.parse_args()
 
+    # Windows 默认的 ProactorEventLoop 用不了 psycopg 的异步模式（checkpointer
+    # 要用），而 asyncio.run 是按全局策略建循环的，所以在这里换掉。
+    # 服务端走的是另一条路：uvicorn 直接传 loop_factory、绕过策略，见
+    # app/main.py::selector_loop_factory。
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     dataset = load_dataset(args.dataset)
-    run_eval(
-        dataset,
-        skip_agent=args.skip_agent,
-        skip_judge=args.skip_judge,
-        skip_rag_semantic=args.skip_rag_semantic,
-        category_filter=args.category,
+    # 整个评测必须跑在同一个事件循环里：checkpointer 的连接池绑定 loop，
+    # 不能改成「每条 asyncio.run 一次」。
+    asyncio.run(
+        run_eval(
+            dataset,
+            skip_agent=args.skip_agent,
+            skip_judge=args.skip_judge,
+            skip_rag_semantic=args.skip_rag_semantic,
+            category_filter=args.category,
+            dataset_path=args.dataset,
+        )
     )

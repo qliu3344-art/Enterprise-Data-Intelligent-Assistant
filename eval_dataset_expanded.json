@@ -1834,7 +1834,7 @@
   {
     "id": 113,
     "question": "hello world",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "reference_keywords": [],
     "category": "edge_case",
@@ -1843,7 +1843,7 @@
   {
     "id": 114,
     "question": "你好世界",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "expected_doc_keywords": [],
     "reference_keywords": [],
@@ -1853,7 +1853,7 @@
   {
     "id": 115,
     "question": "世界你好",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "expected_doc_keywords": [],
     "reference_keywords": [],
@@ -1863,7 +1863,7 @@
   {
     "id": 116,
     "question": "你好，世界",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "expected_doc_keywords": [],
     "reference_keywords": [],
@@ -1873,7 +1873,7 @@
   {
     "id": 117,
     "question": "世上你好",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "expected_doc_keywords": [],
     "reference_keywords": [],

@@ -1,0 +1,6536 @@
+[
+  {
+    "id": 1,
+    "question": "销售部11月的考勤异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "销售部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 2,
+    "question": "技术部11月的考勤异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "技术部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 3,
+    "question": "11月客服部的考勤异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "客服部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 4,
+    "question": "运营部在11月的考勤异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "运营部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 5,
+    "question": "销售部11月的考勤记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "销售部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 6,
+    "question": "技术部11月的考勤记录条数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "技术部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 7,
+    "question": "客服部11月的考勤数据一共有多少条记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "客服部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 8,
+    "question": "11月客户数据和运营数据的记录数合计是多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户",
+      "运营",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 9,
+    "question": "11月四个部门的考勤异常率分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "各部门",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 10,
+    "question": "11月哪个部门的考勤异常率最高？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "最高",
+      "部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 11,
+    "question": "11月四个部门各自的考勤记录数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "各部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 12,
+    "question": "销售部和技术部哪个部门的考勤异常记录更多？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常",
+      "销售部",
+      "技术部"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 13,
+    "question": "客服部和运营部的考勤记录数相差多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "客服部",
+      "运营部"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 14,
+    "question": "11月考勤数据里记录条数最少的部门是哪个？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "最少",
+      "部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 15,
+    "question": "销售部和客服部的考勤异常率相差多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "销售部",
+      "客服部"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 16,
+    "question": "11月各部门的记录总数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "各部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 17,
+    "question": "11月记录总数最少的部门是哪个？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "最少",
+      "部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 18,
+    "question": "2025年11月全部数据的记录总数是多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录总数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 19,
+    "question": "2025年11月全部数据的整体异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "整体"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 20,
+    "question": "11月考勤、销售、客户、运营四类数据各有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "销售",
+      "客户",
+      "运营"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 21,
+    "question": "11月四类数据的平均质量分分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "质量分",
+      "各类型"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 22,
+    "question": "11月各类型数据的异常率分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "各类型"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 23,
+    "question": "11月哪个数据类型的平均质量分最低？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "质量分",
+      "最低",
+      "类型"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 24,
+    "question": "11月哪个数据类型的异常率最高？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "最高",
+      "类型"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 25,
+    "question": "11月考勤数据的异常记录一共有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常",
+      "考勤",
+      "数量"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 26,
+    "question": "11月运营数据的记录数是多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "记录数",
+      "运营"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 27,
+    "question": "11月客户数据和销售数据加起来一共有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户",
+      "销售",
+      "合计"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 28,
+    "question": "11月销售数据的异常记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "异常",
+      "销售",
+      "数量"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 29,
+    "question": "11月考勤数据和客户数据相比，哪个平均质量分更高？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "质量分",
+      "考勤",
+      "客户"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 30,
+    "question": "11月技术部和销售部的记录总数哪个多？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "销售部",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 31,
+    "question": "11月被标记为异常的记录都有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "11月",
+      "原因"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 32,
+    "question": "11月考勤数据里的异常记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "考勤",
+      "记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 33,
+    "question": "11月销售数据里的异常记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "销售",
+      "记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 34,
+    "question": "技术部11月的考勤异常记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "技术部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 35,
+    "question": "销售部11月的考勤异常记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "销售部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 36,
+    "question": "客服部11月的考勤异常记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常",
+      "客服部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 37,
+    "question": "郑十11月有几次考勤异常，原因分别是什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常",
+      "原因"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "加班时长",
+      "异常数据认定标准"
+    ]
+  },
+  {
+    "id": 38,
+    "question": "陈十二11月的考勤异常原因是什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "异常",
+      "加班"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "加班时长",
+      "书面说明",
+      "人力资源部审核",
+      "考勤异常"
+    ]
+  },
+  {
+    "id": 39,
+    "question": "李四11月16日的考勤为什么被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "李四",
+      "加班",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "加班时长",
+      "异常数据认定标准"
+    ]
+  },
+  {
+    "id": 40,
+    "question": "孙七11月26日的销售记录为什么被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "订单数",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "常见异常原因分类",
+      "录入错误",
+      "订单数量",
+      "人工审核"
+    ]
+  },
+  {
+    "id": 41,
+    "question": "11月加班时长超过30小时的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "加班时长",
+      "30小时",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 42,
+    "question": "郑十11月10日的请假天数为什么被判为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "请假天数",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "单月请假天数",
+      "人工复核",
+      "季度累计请假"
+    ]
+  },
+  {
+    "id": 43,
+    "question": "销售部上旬的加班时长合计是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "上旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 44,
+    "question": "技术部上旬的请假天数合计是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "上旬",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 45,
+    "question": "客服部上旬的迟到次数合计是多少次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "上旬",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 46,
+    "question": "运营部上旬有哪些考勤记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "上旬",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 47,
+    "question": "销售部中旬的考勤记录明细有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "中旬",
+      "明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 48,
+    "question": "技术部中旬的加班时长一共是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "中旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 49,
+    "question": "客服部中旬的请假天数合计是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "中旬",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 50,
+    "question": "运营部中旬的迟到次数合计是多少次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "中旬",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 51,
+    "question": "销售部下旬的请假天数合计是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "下旬",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 52,
+    "question": "技术部下旬的考勤记录分别是哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "下旬",
+      "明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 53,
+    "question": "客服部下旬的加班时长是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "下旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 54,
+    "question": "运营部下旬的考勤记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "下旬",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 55,
+    "question": "2025年11月10日技术部的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月10日",
+      "技术部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 56,
+    "question": "2025年11月16日销售部的考勤明细是什么？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月16日",
+      "销售部",
+      "明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 57,
+    "question": "2025年11月1日客服部有哪些考勤记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月1日",
+      "客服部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 58,
+    "question": "2025年11月5日销售部的考勤记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月5日",
+      "销售部",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 59,
+    "question": "2025年11月20日运营部的考勤情况是怎样的？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月20日",
+      "运营部",
+      "考勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 60,
+    "question": "2025年11月24日技术部的迟到次数合计是多少次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月24日",
+      "技术部",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 61,
+    "question": "2025年11月8日销售部的请假天数是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月8日",
+      "销售部",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 62,
+    "question": "2025年11月30日全部部门的考勤记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月30日",
+      "考勤",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 63,
+    "question": "2025年11月12日销售部的加班时长是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月12日",
+      "销售部",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 64,
+    "question": "2025年11月18日客服部的加班时长合计是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月18日",
+      "客服部",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 65,
+    "question": "张三11月的加班时长合计是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 66,
+    "question": "李四11月的迟到次数合计是多少次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 67,
+    "question": "孙七11月的请假天数合计是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 68,
+    "question": "周八11月的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "周八",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 69,
+    "question": "钱十一11月的考勤明细分别是哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 70,
+    "question": "赵六11月的出勤天数是多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "赵六",
+      "出勤天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 71,
+    "question": "王五11月的加班时长合计是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "王五",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 72,
+    "question": "吴九11月的迟到次数合计是多少次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "吴九",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 73,
+    "question": "陈十二11月的加班时长合计是多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 74,
+    "question": "11月考勤数据里加班时长最长的是哪位员工？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "加班时长",
+      "最长",
+      "员工"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 75,
+    "question": "11月考勤数据里迟到次数最多的员工是谁？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "迟到次数",
+      "最多",
+      "员工"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 76,
+    "question": "销售部11月的销售订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 77,
+    "question": "技术部11月的销售订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 78,
+    "question": "客服部11月的销售订单金额一共是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 79,
+    "question": "运营部11月的订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 80,
+    "question": "销售部11月的订单数合计是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "订单数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 81,
+    "question": "销售部11月的销售记录明细有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 82,
+    "question": "技术部11月的销售记录分别是哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "销售记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 83,
+    "question": "销售部11月订单金额最高的一笔是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "订单金额",
+      "最高"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 84,
+    "question": "李四11月的销售订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 85,
+    "question": "孙七11月的销售订单明细有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "订单明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 86,
+    "question": "张三11月的销售订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 87,
+    "question": "钱十一11月的销售记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "销售记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 88,
+    "question": "11月销售数据里哪位销售员的订单金额最高？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售员",
+      "订单金额",
+      "最高"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 89,
+    "question": "产品A在11月的订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "产品A",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 90,
+    "question": "客户X在11月的订单金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户X",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 91,
+    "question": "销售部11月的客户记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "客户",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 92,
+    "question": "技术部11月的客户记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "客户",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 93,
+    "question": "客服部11月记录了多少条客户数据？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "客户",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 94,
+    "question": "运营部11月的客户数据有多少条记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "客户",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 95,
+    "question": "销售部11月的合同金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 96,
+    "question": "技术部11月的合同金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 97,
+    "question": "客服部11月的合同金额总计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 98,
+    "question": "11月客户数据的平均合同金额是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户",
+      "平均",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 99,
+    "question": "11月销售部的A级客户有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "A级",
+      "客户"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 100,
+    "question": "11月B级客户的合同金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "B级",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 101,
+    "question": "11月C级客户的数量有多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "C级",
+      "数量"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 102,
+    "question": "客户Alpha在11月的合同金额合计是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户Alpha",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 103,
+    "question": "客户Beta的跟进记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户Beta",
+      "跟进"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 104,
+    "question": "客户Gamma在11月的合同金额是多少元？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户Gamma",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 105,
+    "question": "客户Delta的等级和跟进日期分别是什么？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客户Delta",
+      "等级",
+      "跟进日期"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 106,
+    "question": "11月合同金额超过5万元的客户记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "合同金额",
+      "5万",
+      "客户"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 107,
+    "question": "11月跟进日期在25号之后的客户记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "跟进日期",
+      "25号",
+      "客户"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 108,
+    "question": "11月运营数据里Value最高的是哪个指标？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营",
+      "Value",
+      "最高"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 109,
+    "question": "11月运营指标中完成率超过100%的是哪一个？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营",
+      "完成率",
+      "100%"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 110,
+    "question": "11月Revenue指标的数值和目标分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "Revenue",
+      "目标",
+      "数值"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 111,
+    "question": "张三11月的出勤天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "出勤天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 112,
+    "question": "张三11月请假请了几天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "请假天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 113,
+    "question": "张三11月的加班时长是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "加班时长",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 114,
+    "question": "张三11月迟到了几次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "张三",
+      "迟到次数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 115,
+    "question": "赵六上旬一共出勤了多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "赵六",
+      "出勤天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 116,
+    "question": "赵六上旬的请假天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "赵六",
+      "请假天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 117,
+    "question": "赵六上旬加班了多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "赵六",
+      "加班时长",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 118,
+    "question": "赵六上旬的迟到次数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "赵六",
+      "迟到次数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 119,
+    "question": "郑十中旬的出勤天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "出勤天数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 120,
+    "question": "郑十中旬请假请了几天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "请假天数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 121,
+    "question": "郑十中旬的加班时长是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "加班时长",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 122,
+    "question": "郑十中旬迟到了几次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "迟到次数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 123,
+    "question": "李四11月一共出勤了多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "出勤天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 124,
+    "question": "李四11月的请假天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "请假天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 125,
+    "question": "李四11月加班了多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "加班时长",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 126,
+    "question": "李四11月的迟到次数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "李四",
+      "迟到次数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 127,
+    "question": "孙七上旬的出勤天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "出勤天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 128,
+    "question": "孙七上旬请假请了几天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "请假天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 129,
+    "question": "孙七上旬的加班时长是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "加班时长",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 130,
+    "question": "孙七上旬迟到了几次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "迟到次数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 131,
+    "question": "钱十一中旬一共出勤了多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "出勤天数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 132,
+    "question": "钱十一中旬的请假天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "请假天数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 133,
+    "question": "钱十一中旬加班了多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "加班时长",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 134,
+    "question": "钱十一中旬的迟到次数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "钱十一",
+      "迟到次数",
+      "中旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 135,
+    "question": "周八11月的出勤天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "周八",
+      "出勤天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 136,
+    "question": "周八11月请假请了几天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "周八",
+      "请假天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 137,
+    "question": "周八11月的加班时长是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "周八",
+      "加班时长",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 138,
+    "question": "周八11月迟到了几次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "周八",
+      "迟到次数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 139,
+    "question": "陈十二上旬一共出勤了多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "出勤天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 140,
+    "question": "陈十二上旬的请假天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "请假天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 141,
+    "question": "陈十二上旬加班了多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "加班时长",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 142,
+    "question": "陈十二上旬的迟到次数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "迟到次数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 143,
+    "question": "王五11月的出勤天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "王五",
+      "出勤天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 144,
+    "question": "王五11月请假请了几天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "王五",
+      "请假天数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 145,
+    "question": "王五11月的加班时长是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "王五",
+      "加班时长",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 146,
+    "question": "王五11月迟到了几次？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "王五",
+      "迟到次数",
+      "11月"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 147,
+    "question": "吴九上旬一共出勤了多少天？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "吴九",
+      "出勤天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 148,
+    "question": "吴九上旬的请假天数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "吴九",
+      "请假天数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 149,
+    "question": "吴九上旬加班了多少小时？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "吴九",
+      "加班时长",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 150,
+    "question": "吴九上旬的迟到次数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "吴九",
+      "迟到次数",
+      "上旬"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 151,
+    "question": "11月1日的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月1日",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 152,
+    "question": "11月5日出勤的员工有谁？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月5日",
+      "出勤"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 153,
+    "question": "11月10日技术部的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月10日",
+      "技术部",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 154,
+    "question": "11月15日销售部的考勤明细给我看一下",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月15日",
+      "销售部",
+      "考勤明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 155,
+    "question": "11月20日的销售订单记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月20日",
+      "销售订单"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 156,
+    "question": "11月25日客服部的考勤记录",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月25日",
+      "客服部",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 157,
+    "question": "11月21日运营部的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月21日",
+      "运营部",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 158,
+    "question": "11月1日的客户跟进记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月1日",
+      "客户跟进"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 159,
+    "question": "11月15日的客户数据明细",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月15日",
+      "客户数据"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 160,
+    "question": "11月10日的销售记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月10日",
+      "销售记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 161,
+    "question": "11月14日的运营指标是什么？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月14日",
+      "运营指标"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 162,
+    "question": "11月25日的客户合同金额分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月25日",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 163,
+    "question": "11月5日的销售订单金额是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月5日",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 164,
+    "question": "11月10日客服部员工的迟到次数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月10日",
+      "客服部",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 165,
+    "question": "11月15日技术部员工的加班时长分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月15日",
+      "技术部",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 166,
+    "question": "11月28日的运营报表数据有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月28日",
+      "运营报表"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 167,
+    "question": "11月1日客服部的考勤记录有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月1日",
+      "客服部",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 168,
+    "question": "11月28日技术部的考勤记录",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "11月28日",
+      "技术部",
+      "考勤记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 169,
+    "question": "技术部下旬的加班时长分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "下旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 170,
+    "question": "技术部下旬的请假天数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "下旬",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 171,
+    "question": "销售部下旬的迟到次数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "下旬",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 172,
+    "question": "客服部中旬的请假天数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "中旬",
+      "请假天数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 173,
+    "question": "客服部下旬的加班时长分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "下旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 174,
+    "question": "运营部中旬的加班时长分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "中旬",
+      "加班时长"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 175,
+    "question": "运营部下旬的迟到次数分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "下旬",
+      "迟到次数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 176,
+    "question": "销售部11月的订单金额分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 177,
+    "question": "技术部11月的订单金额分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 178,
+    "question": "客服部11月的订单金额分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "订单金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 179,
+    "question": "考勤数据里迟到次数超过3次的员工有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "迟到次数",
+      "超过3次"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 180,
+    "question": "考勤数据里请假天数超过3天的员工都是谁？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "请假天数",
+      "超过3天"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 181,
+    "question": "销售部的销售记录明细有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "销售明细"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 182,
+    "question": "客服部的客户名单有哪些？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "客户名单"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 183,
+    "question": "11月的销售订单卖给了哪些客户？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "销售订单",
+      "客户"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 184,
+    "question": "客户数据里A级客户的合同金额分别是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "reference_keywords": [
+      "A级客户",
+      "合同金额"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 185,
+    "question": "考勤数据一共有多少条记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 186,
+    "question": "销售数据的记录数是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "销售",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 187,
+    "question": "客户数据有多少条记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 188,
+    "question": "运营数据有几条记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "运营",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 189,
+    "question": "考勤数据的异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 190,
+    "question": "全部数据的异常率是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "全部数据",
+      "异常率"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 191,
+    "question": "运营数据里检出的异常有几条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "运营",
+      "异常数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 192,
+    "question": "销售数据的异常记录有几条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "销售",
+      "异常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 193,
+    "question": "客户数据的正常记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户",
+      "正常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 194,
+    "question": "技术部的正常记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "正常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 195,
+    "question": "运营部的正常记录有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "正常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 196,
+    "question": "技术部四类数据加起来一共有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 197,
+    "question": "客服部四类数据加起来一共有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "记录数"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 198,
+    "question": "考勤数据和销售数据加起来一共多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "销售",
+      "合计"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 199,
+    "question": "客户数据和运营数据加起来一共有多少条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户",
+      "运营",
+      "合计"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 200,
+    "question": "哪个部门的记录数最多？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "部门",
+      "记录数最多"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 201,
+    "question": "哪类数据检出的异常最多？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "数据类型",
+      "异常最多"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 202,
+    "question": "销售部的数据量和客服部相比谁更多？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "客服部",
+      "数据量"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 203,
+    "question": "客户数据在四类数据里的占比是多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "客户数据",
+      "占比"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 204,
+    "question": "技术部和客服部的记录数相差多少？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "客服部",
+      "相差"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 205,
+    "question": "郑十有哪些异常记录？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 206,
+    "question": "郑十11月10日的异常原因是什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "11月10日",
+      "异常原因"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "单月请假天数",
+      "人工复核",
+      "季度累计请假"
+    ]
+  },
+  {
+    "id": 207,
+    "question": "郑十11月27日为什么被判定为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "11月27日",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "加班时长",
+      "异常数据认定标准"
+    ]
+  },
+  {
+    "id": 208,
+    "question": "陈十二的异常记录详情",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "陈十二",
+      "异常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 209,
+    "question": "李四的异常记录是什么原因？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "李四",
+      "异常原因"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "异常数据认定标准",
+      "加班时长",
+      "请假天数"
+    ]
+  },
+  {
+    "id": 210,
+    "question": "孙七的异常记录原因",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "异常原因"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "常见异常原因分类",
+      "录入错误",
+      "订单数量",
+      "人工审核"
+    ]
+  },
+  {
+    "id": 211,
+    "question": "订单数量异常的是哪位员工？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "订单数量",
+      "异常"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 212,
+    "question": "考勤数据里的异常记录涉及哪几位员工？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "异常员工"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 213,
+    "question": "技术部的加班异常记录是哪一条？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "加班异常"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 214,
+    "question": "客服部有加班异常的记录吗？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "加班异常"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 215,
+    "question": "销售部的异常记录涉及哪几位员工？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "异常员工"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 216,
+    "question": "运营部有异常记录吗？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "运营部",
+      "异常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 217,
+    "question": "客户数据里有异常记录吗？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "客户数据",
+      "异常记录"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 218,
+    "question": "考勤数据里的异常记录是什么原因造成的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "异常原因"
+    ],
+    "category": "hybrid",
+    "source": "regression",
+    "expected_doc_keywords": [
+      "异常数据认定标准",
+      "加班时长",
+      "请假天数"
+    ]
+  },
+  {
+    "id": 219,
+    "question": "被标记为加班异常的三位员工分别是谁？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "加班异常",
+      "员工"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 220,
+    "question": "异常记录主要出现在哪些部门？",
+    "expected_intent": "data_query",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "reference_keywords": [
+      "异常记录",
+      "部门"
+    ],
+    "category": "data_query",
+    "source": "regression"
+  },
+  {
+    "id": 221,
+    "question": "考勤制度对迟到的规定是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到认定",
+      "30 分钟",
+      "旷工半日"
+    ],
+    "reference_keywords": [
+      "迟到",
+      "30 分钟",
+      "旷工半日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 222,
+    "question": "迟到次数多了会有什么后果？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "迟到次数",
+      "面谈",
+      "人力资源部预警"
+    ],
+    "reference_keywords": [
+      "迟到次数",
+      "面谈",
+      "预警"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 223,
+    "question": "早退是怎么认定的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "早退认定",
+      "未经批准",
+      "旷工半日"
+    ],
+    "reference_keywords": [
+      "早退",
+      "未经批准",
+      "旷工半日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 224,
+    "question": "公司的标准工作时间是怎么规定的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "标准工时制",
+      "9:00-18:00",
+      "午休"
+    ],
+    "reference_keywords": [
+      "标准工时",
+      "9:00-18:00",
+      "每周工作5天"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 225,
+    "question": "弹性工作制适用于哪些岗位？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "弹性工作制",
+      "技术部",
+      "核心工作时间"
+    ],
+    "reference_keywords": [
+      "弹性工作制",
+      "技术部",
+      "核心工作时间"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 226,
+    "question": "员工每月出勤天数的最低要求是多少？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "出勤天数",
+      "法定工作日",
+      "80%"
+    ],
+    "reference_keywords": [
+      "出勤天数",
+      "80%",
+      "出勤异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 227,
+    "question": "请假不同天数分别需要谁来审批？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "请假 1 天以内",
+      "直属上级",
+      "部门负责人",
+      "人力资源部"
+    ],
+    "reference_keywords": [
+      "请假审批",
+      "直属上级",
+      "人力资源部"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 228,
+    "question": "加班需要提前走什么审批流程？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "OA 系统",
+      "加班申请",
+      "直属上级审批"
+    ],
+    "reference_keywords": [
+      "OA 系统",
+      "加班申请",
+      "审批"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 229,
+    "question": "单月加班时长原则上不能超过多少小时？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "单月加班时长",
+      "36 小时",
+      "考勤异常"
+    ],
+    "reference_keywords": [
+      "单月加班",
+      "36 小时",
+      "考勤异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 230,
+    "question": "单日加班时长最多不能超过几个小时？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "单日加班时长",
+      "4 小时",
+      "不得超过"
+    ],
+    "reference_keywords": [
+      "单日加班",
+      "4 小时"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 231,
+    "question": "连续两个月加班超过30小时会收到什么提醒？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "健康关怀提醒",
+      "30 小时",
+      "人力资源部"
+    ],
+    "reference_keywords": [
+      "连续两个月",
+      "30 小时",
+      "健康关怀提醒"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 232,
+    "question": "加班费的计算标准是怎么规定的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "工作日加班",
+      "休息日加班",
+      "法定节假日加班",
+      "150%"
+    ],
+    "reference_keywords": [
+      "加班费",
+      "150%",
+      "200%",
+      "300%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 233,
+    "question": "调休必须在多长时间内使用完？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "调休",
+      "30 个自然日",
+      "自动作废"
+    ],
+    "reference_keywords": [
+      "调休",
+      "30 个自然日",
+      "作废"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 234,
+    "question": "公司规定的请假类型有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "年假",
+      "事假",
+      "病假",
+      "婚假"
+    ],
+    "reference_keywords": [
+      "请假类型",
+      "年假",
+      "病假",
+      "丧假"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 235,
+    "question": "年假天数是按工作年限怎么算的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "累计工作满",
+      "年假",
+      "15 天"
+    ],
+    "reference_keywords": [
+      "年假",
+      "工作年限",
+      "15 天"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 236,
+    "question": "加班审批与调休管理规定里的核心原则是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "非必要不加班",
+      "先审批后加班",
+      "总量控制"
+    ],
+    "reference_keywords": [
+      "核心原则",
+      "非必要不加班",
+      "总量控制"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 237,
+    "question": "公司把加班分成了哪几种类型？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "常规加班",
+      "紧急加班",
+      "大促保障加班",
+      "值班加班"
+    ],
+    "reference_keywords": [
+      "加班类型",
+      "常规加班",
+      "值班加班"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 238,
+    "question": "紧急情况来不及提前审批加班怎么办？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "紧急加班",
+      "补批",
+      "24 小时"
+    ],
+    "reference_keywords": [
+      "紧急加班",
+      "补批",
+      "24 小时"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 239,
+    "question": "大促保障加班指的是哪些场景？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促保障加班",
+      "双11",
+      "618"
+    ],
+    "reference_keywords": [
+      "大促保障加班",
+      "双11",
+      "技术保障"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 240,
+    "question": "大促期间单月加班上限放宽到多少小时？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促期间",
+      "60 小时",
+      "异常"
+    ],
+    "reference_keywords": [
+      "大促",
+      "60 小时",
+      "加班上限"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 241,
+    "question": "大促结束后部门负责人需要提交什么报告？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促加班总结报告",
+      "5 个工作日",
+      "部门负责人"
+    ],
+    "reference_keywords": [
+      "大促加班总结报告",
+      "5 个工作日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 242,
+    "question": "员工提交加班申请后上级要在多久内审批完？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "直属上级",
+      "4 小时",
+      "审批"
+    ],
+    "reference_keywords": [
+      "直属上级",
+      "4 小时",
+      "审批"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 243,
+    "question": "单次申请加班超过4小时需要加签谁？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "4 小时",
+      "加签",
+      "部门负责人"
+    ],
+    "reference_keywords": [
+      "4 小时",
+      "加签",
+      "部门负责人"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 244,
+    "question": "提交加班申请时需要注明哪些内容？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "加班日期",
+      "预计时长",
+      "加班原因"
+    ],
+    "reference_keywords": [
+      "加班日期",
+      "预计时长",
+      "加班原因"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 245,
+    "question": "工作日和休息日加班的调休比例分别是多少？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "1:1",
+      "1:1.5",
+      "半天"
+    ],
+    "reference_keywords": [
+      "调休比例",
+      "1:1",
+      "1:1.5"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 246,
+    "question": "法定节假日加班可以调休吗？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "法定节假日加班",
+      "不可调休",
+      "加班费"
+    ],
+    "reference_keywords": [
+      "法定节假日",
+      "不可调休",
+      "加班费"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 247,
+    "question": "过期没用完的调休系统会在什么时候清理？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "每季度末",
+      "最后一个工作日",
+      "自动清理"
+    ],
+    "reference_keywords": [
+      "季度末",
+      "自动清理",
+      "调休"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 248,
+    "question": "大促保障期间产生的调休有效期是多少天？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促保障",
+      "60 个自然日",
+      "延长"
+    ],
+    "reference_keywords": [
+      "大促保障",
+      "调休有效期",
+      "60 个自然日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 249,
+    "question": "调休申请超过1天需要谁审批？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "调休申请",
+      "直属上级",
+      "部门负责人"
+    ],
+    "reference_keywords": [
+      "调休申请",
+      "直属上级",
+      "部门负责人"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 250,
+    "question": "部门月人均加班超过多少小时会触发红色预警？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "红色预警",
+      "36 小时",
+      "加班合理性审查"
+    ],
+    "reference_keywords": [
+      "红色预警",
+      "月人均加班",
+      "36 小时"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 251,
+    "question": "订单完成后要在多久内录入系统？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "24 小时",
+      "录入",
+      "及时录入"
+    ],
+    "reference_keywords": [
+      "24 小时",
+      "录入",
+      "及时录入"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 252,
+    "question": "一条销售记录必须包含哪些字段？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "工号",
+      "销售员",
+      "订单金额",
+      "订单数"
+    ],
+    "reference_keywords": [
+      "必填字段",
+      "工号",
+      "订单金额",
+      "客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 253,
+    "question": "订单金额按大小是怎么分级的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "小额订单",
+      "普通订单",
+      "大额订单",
+      "特大订单"
+    ],
+    "reference_keywords": [
+      "订单金额分级",
+      "小额订单",
+      "特大订单"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 254,
+    "question": "特大订单需要谁来审批确认？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "特大订单",
+      "销售总监",
+      "审批确认"
+    ],
+    "reference_keywords": [
+      "特大订单",
+      "销售总监"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 255,
+    "question": "单笔订单金额超过多少会被自动标记为异常？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "单笔订单金额",
+      "500000",
+      "合同扫描件"
+    ],
+    "reference_keywords": [
+      "单笔订单金额",
+      "500000",
+      "合同扫描件"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 256,
+    "question": "销售数据质量分是按哪几个维度加权计算的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "字段完整性",
+      "数据准确性",
+      "录入及时性",
+      "关联一致性"
+    ],
+    "reference_keywords": [
+      "质量分",
+      "字段完整性",
+      "关联一致性"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 257,
+    "question": "销售数据质量分的等级是怎么划分的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "优秀",
+      "良好",
+      "待改进",
+      "不合格"
+    ],
+    "reference_keywords": [
+      "质量分等级",
+      "优秀",
+      "不合格"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 258,
+    "question": "每月几号前要对上月销售数据进行统一校验？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "每月5日",
+      "销售管理部",
+      "对账"
+    ],
+    "reference_keywords": [
+      "月度校验",
+      "每月5日",
+      "对账"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 259,
+    "question": "公司目前有哪些在售产品？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "产品A",
+      "产品B",
+      "产品C",
+      "产品D"
+    ],
+    "reference_keywords": [
+      "在售产品",
+      "产品A",
+      "产品C"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 260,
+    "question": "客户编码规则是怎么定的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "客户Alpha",
+      "L-",
+      "CRM 系统"
+    ],
+    "reference_keywords": [
+      "客户编码",
+      "客户Alpha",
+      "L-"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 261,
+    "question": "双11大促的时间范围是什么时候？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "双11大促",
+      "11月1日",
+      "11月15日"
+    ],
+    "reference_keywords": [
+      "双11大促",
+      "11月1日",
+      "11月15日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 262,
+    "question": "大促期间数据录入的时效要求有什么变化？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促期间",
+      "48 小时",
+      "放宽"
+    ],
+    "reference_keywords": [
+      "大促",
+      "48 小时",
+      "录入时效"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 263,
+    "question": "系统是怎么自动检测销售数据异常的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "Q1",
+      "Q3",
+      "IQR",
+      "候选异常"
+    ],
+    "reference_keywords": [
+      "自动异常检测",
+      "IQR",
+      "候选异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 264,
+    "question": "哪些订单异常容易被人工审核判定为正常？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "业务合理波动",
+      "新客户首单大额",
+      "老客户异常大单"
+    ],
+    "reference_keywords": [
+      "人工审核",
+      "业务合理波动",
+      "新客户首单大额"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 265,
+    "question": "销售数据常见的异常原因分成哪几类？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促冲量",
+      "大客户签约",
+      "合并开票",
+      "录入错误"
+    ],
+    "reference_keywords": [
+      "异常原因分类",
+      "大促冲量",
+      "合并开票"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 266,
+    "question": "大促期间异常检测的对比基准换成了什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "近 3 个月历史均值",
+      "去年同期大促数据",
+      "2025年11月"
+    ],
+    "reference_keywords": [
+      "对比基准",
+      "去年同期大促数据"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 267,
+    "question": "如果大促没有去年同期数据，用什么做基准？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "去年同期",
+      "上一个同期大促数据",
+      "行业基准值"
+    ],
+    "reference_keywords": [
+      "去年同期",
+      "行业基准值"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 268,
+    "question": "大促期间 IQR 离群检测阈值调整到多少？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "IQR 离群检测阈值",
+      "3.0",
+      "阈值浮动"
+    ],
+    "reference_keywords": [
+      "IQR",
+      "阈值",
+      "3.0"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 269,
+    "question": "大促结束后异常检测阈值多久恢复常规？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促期最后一天",
+      "3 个工作日",
+      "恢复至常规值"
+    ],
+    "reference_keywords": [
+      "大促期最后一天",
+      "3 个工作日",
+      "恢复"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 270,
+    "question": "大促期间单笔订单金额上限放宽到常规的几倍？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "单笔订单金额",
+      "上限放宽",
+      "3 倍"
+    ],
+    "reference_keywords": [
+      "单笔订单金额",
+      "上限放宽",
+      "3 倍"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 271,
+    "question": "大促期间多大的单笔金额仍然需要合同核验？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "1,000,000",
+      "合同核验",
+      "单笔金额"
+    ],
+    "reference_keywords": [
+      "1,000,000",
+      "合同核验"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 272,
+    "question": "大促期间单日订单数量异常怎么处理？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "单日订单数量",
+      "暂缓",
+      "统一评估"
+    ],
+    "reference_keywords": [
+      "单日订单数量",
+      "暂缓",
+      "大促结束后"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 273,
+    "question": "大促期间采集的数据会打上哪些标签？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "promotion_1111",
+      "promotion_618",
+      "promotion_year_end"
+    ],
+    "reference_keywords": [
+      "大促标签",
+      "promotion_1111",
+      "promotion_618"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 274,
+    "question": "大促标签是谁在什么时候打上的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "根据日期自动标注",
+      "business_data",
+      "系统"
+    ],
+    "reference_keywords": [
+      "自动标注",
+      "business_data"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 275,
+    "question": "大促结束后的数据集中清理期有多长？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促结束后",
+      "5 个工作日",
+      "数据集中清理期"
+    ],
+    "reference_keywords": [
+      "数据集中清理期",
+      "5 个工作日"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 276,
+    "question": "确认为业务合理波动的异常记录会怎么处理？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "解除异常标记",
+      "大促业务合理",
+      "人工审核"
+    ],
+    "reference_keywords": [
+      "解除异常标记",
+      "大促业务合理"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 277,
+    "question": "大促数据清理完成后要生成什么报告？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促数据质量报告",
+      "清理完成",
+      "数据集中清理期"
+    ],
+    "reference_keywords": [
+      "大促数据质量报告",
+      "清理完成"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 278,
+    "question": "大促期间销售部的数据波动大概有多大？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "销售部",
+      "5-10 倍",
+      "去年大促同期"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "5-10 倍",
+      "波动"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 279,
+    "question": "技术部在大促期间出现销售数据会怎么处理？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "技术部",
+      "系统保障",
+      "标记异常"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "系统保障",
+      "标记异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 280,
+    "question": "产品C在大促期间的异常判定有什么特别之处？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "产品C",
+      "单价高",
+      "样本量小",
+      "IQR 方法可能不适用"
+    ],
+    "reference_keywords": [
+      "产品C",
+      "样本量小",
+      "IQR"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 281,
+    "question": "公司的客户等级体系是怎么划分的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "三级分类体系",
+      "潜在客户",
+      "流失客户"
+    ],
+    "reference_keywords": [
+      "A/B/C",
+      "潜在客户",
+      "流失客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 282,
+    "question": "客户等级多久复核调整一次？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "动态调整",
+      "每季度复核一次",
+      "最新数据"
+    ],
+    "reference_keywords": [
+      "动态调整",
+      "每季度"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 283,
+    "question": "客户分级主要看哪些维度？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "合同金额",
+      "合作年限",
+      "回款及时性",
+      "产品使用深度"
+    ],
+    "reference_keywords": [
+      "多维度评估",
+      "合同金额",
+      "回款及时性"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 284,
+    "question": "成为A级客户需要满足哪些条件？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "年度合同金额",
+      "100,000 元",
+      "战略合作客户"
+    ],
+    "reference_keywords": [
+      "A级客户",
+      "100,000 元",
+      "24 个月"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 285,
+    "question": "A级客户的服务标准是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "专属客户成功经理",
+      "7×24 小时",
+      "提前 30 天"
+    ],
+    "reference_keywords": [
+      "A级客户",
+      "客户成功经理",
+      "7×24 小时"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 286,
+    "question": "A级客户能享受哪些客户权益？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "产品折扣",
+      "优先反馈通道",
+      "联合案例包装"
+    ],
+    "reference_keywords": [
+      "客户权益",
+      "产品折扣",
+      "联合案例包装"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 287,
+    "question": "B级客户的准入标准是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "20,000-99,999",
+      "连续合作超过 12 个月",
+      "增购"
+    ],
+    "reference_keywords": [
+      "B级客户",
+      "20,000-99,999",
+      "12 个月"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 288,
+    "question": "B级客户的合同到期提醒提前多久启动？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "合同到期前 15 天",
+      "续约提醒",
+      "B 级客户"
+    ],
+    "reference_keywords": [
+      "B级客户",
+      "15 天",
+      "续约提醒"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 289,
+    "question": "C级客户的准入标准是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "年度合同金额",
+      "20,000 元",
+      "合作年限不足 12 个月"
+    ],
+    "reference_keywords": [
+      "C级客户",
+      "20,000 元",
+      "基础客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 290,
+    "question": "C级客户的续约提醒是提前几天？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "合同到期前 7 天",
+      "续约提醒",
+      "基础客户"
+    ],
+    "reference_keywords": [
+      "C级客户",
+      "7 天",
+      "续约提醒"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 291,
+    "question": "L级客户是怎么定义的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "潜在客户",
+      "未正式签约",
+      "产品试用"
+    ],
+    "reference_keywords": [
+      "L级客户",
+      "潜在客户",
+      "未正式签约"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 292,
+    "question": "客户从C级升到B级需要满足什么条件？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "C→B",
+      "两项准入条件",
+      "1 个季度"
+    ],
+    "reference_keywords": [
+      "C→B",
+      "升级条件",
+      "1 个季度"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 293,
+    "question": "客户等级在什么情况下会降级？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "A→B",
+      "B→C",
+      "不再满足"
+    ],
+    "reference_keywords": [
+      "降级条件",
+      "A→B",
+      "1 个季度"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 294,
+    "question": "D级客户的冷却期是多久？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "180 天",
+      "冷却期",
+      "不得主动联系"
+    ],
+    "reference_keywords": [
+      "冷却期",
+      "180 天",
+      "不得主动联系"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 295,
+    "question": "每条客户记录必须维护哪些核心字段？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "Customer",
+      "Level",
+      "ContractAmount",
+      "Phone"
+    ],
+    "reference_keywords": [
+      "客户核心字段",
+      "Customer",
+      "Level",
+      "Phone"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 296,
+    "question": "客户跟进与合同管理规范适用于哪些客户？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "签约客户",
+      "潜在客户",
+      "合同生命周期"
+    ],
+    "reference_keywords": [
+      "适用范围",
+      "签约客户",
+      "潜在客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 297,
+    "question": "不同等级客户的最低跟进频率要求是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "每月至少 1 次",
+      "每季度至少 1 次",
+      "每半年至少 1 次"
+    ],
+    "reference_keywords": [
+      "跟进频率",
+      "每月至少 1 次",
+      "每季度至少 1 次"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 298,
+    "question": "A级客户跟进要用什么方式？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "面对面",
+      "视频会议",
+      "A 级"
+    ],
+    "reference_keywords": [
+      "A级",
+      "面对面",
+      "视频会议"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 299,
+    "question": "L级潜在客户多久要跟进一次？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "每两周",
+      "电话/邮件",
+      "L 级（潜在客户）"
+    ],
+    "reference_keywords": [
+      "L级",
+      "每两周",
+      "电话/邮件"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 300,
+    "question": "每次客户跟进后要录入哪些记录内容？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "跟进方式",
+      "跟进内容摘要",
+      "下一步计划"
+    ],
+    "reference_keywords": [
+      "跟进记录",
+      "跟进内容摘要",
+      "30 字"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 301,
+    "question": "超过应跟进日期多少天会被标记为客户跟进异常？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "30 天未跟进",
+      "客户跟进异常",
+      "部门管理考核"
+    ],
+    "reference_keywords": [
+      "30 天",
+      "客户跟进异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 302,
+    "question": "客户超过90天没有跟进会触发什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "90 天",
+      "客户流失风险评估",
+      "自动触发"
+    ],
+    "reference_keywords": [
+      "90 天",
+      "客户流失风险评估"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 303,
+    "question": "什么样的跟进记录会被判定为跟进敷衍？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "3 次跟进记录为空",
+      "30 字",
+      "跟进敷衍"
+    ],
+    "reference_keywords": [
+      "跟进敷衍",
+      "3 次",
+      "30 字"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 304,
+    "question": "合同一共有哪几种类型？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "新签合同",
+      "续约合同",
+      "增购合同",
+      "变更合同"
+    ],
+    "reference_keywords": [
+      "合同类型",
+      "新签合同",
+      "增购合同"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 305,
+    "question": "客户健康度评分是怎么分级的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "健康",
+      "需关注",
+      "风险",
+      "高危"
+    ],
+    "reference_keywords": [
+      "健康度分级",
+      "需关注",
+      "高危"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 306,
+    "question": "合同金额和发票金额偏差超过多少要说明原因？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "发票金额",
+      "5%",
+      "说明原因"
+    ],
+    "reference_keywords": [
+      "发票金额",
+      "偏差",
+      "5%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 307,
+    "question": "合同到期前多久系统会生成续约提醒？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "合同到期前 90 天",
+      "续约提醒",
+      "续约评估"
+    ],
+    "reference_keywords": [
+      "合同到期前 90 天",
+      "续约提醒"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 308,
+    "question": "合同到期后多久没续约客户会变成D级？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "60 天未续约",
+      "D 级",
+      "流失客户"
+    ],
+    "reference_keywords": [
+      "60 天未续约",
+      "D 级",
+      "流失客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 309,
+    "question": "客户电话字段的校验规则是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "11 位数字",
+      "区号-号码",
+      "联系电话异常"
+    ],
+    "reference_keywords": [
+      "电话校验",
+      "11 位数字",
+      "联系电话异常"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 310,
+    "question": "新客户录入时名称去重是怎么判断的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "模糊匹配",
+      "85%",
+      "疑似重复客户"
+    ],
+    "reference_keywords": [
+      "去重",
+      "模糊匹配",
+      "疑似重复客户"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 311,
+    "question": "KPI 指标的管理原则有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "可量化",
+      "可对比",
+      "可达成",
+      "动态调整"
+    ],
+    "reference_keywords": [
+      "指标管理原则",
+      "可量化",
+      "动态调整"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 312,
+    "question": "网站访问量这个指标是怎么定义的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "独立访客数",
+      "去重 UV",
+      "10,000 次"
+    ],
+    "reference_keywords": [
+      "网站访问量",
+      "独立访客数",
+      "去重 UV"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 313,
+    "question": "大促期间哪些运营指标的目标值会上调？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "大促目标",
+      "上调幅度",
+      "网站访问量",
+      "新增用户数"
+    ],
+    "reference_keywords": [
+      "大促目标",
+      "上调",
+      "网站访问量"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 314,
+    "question": "新增用户数是怎么计算的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "注册数",
+      "注销数",
+      "1,000 人"
+    ],
+    "reference_keywords": [
+      "新增用户数",
+      "注册数",
+      "注销数"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 315,
+    "question": "指标完成率达到多少算达标、多少算优秀？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "基本达标",
+      "达标",
+      "优秀",
+      "120%"
+    ],
+    "reference_keywords": [
+      "达标判定",
+      "80%",
+      "120%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 316,
+    "question": "用户活跃率是怎么计算的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "月活跃用户数",
+      "总注册用户数",
+      "30%"
+    ],
+    "reference_keywords": [
+      "用户活跃率",
+      "月活跃用户数",
+      "30%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 317,
+    "question": "客户满意度CSAT用的是什么评分制？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "1-5 分制",
+      "售后问卷",
+      "4.5 分"
+    ],
+    "reference_keywords": [
+      "CSAT",
+      "1-5 分制",
+      "4.5 分"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 318,
+    "question": "营收完成率是怎么算的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "实际营收",
+      "目标营收",
+      "300,000 元"
+    ],
+    "reference_keywords": [
+      "营收完成率",
+      "实际营收",
+      "300,000 元"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 319,
+    "question": "技术部的KPI指标有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "系统可用率",
+      "需求交付准时率",
+      "线上故障恢复时间"
+    ],
+    "reference_keywords": [
+      "技术部",
+      "系统可用率",
+      "需求交付准时率"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 320,
+    "question": "P0故障要在多长时间内恢复？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "P0",
+      "30 分钟",
+      "P1"
+    ],
+    "reference_keywords": [
+      "P0",
+      "30 分钟",
+      "P1"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 321,
+    "question": "销售部的KPI指标有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "月度销售额达成率",
+      "新客户签约数",
+      "客户流失率"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "达成率",
+      "客户流失率"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 322,
+    "question": "客服部的KPI指标有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "首次响应时间",
+      "工单解决率",
+      "CSAT"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "首次响应时间",
+      "工单解决率"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 323,
+    "question": "人事部的KPI指标有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "招聘周期",
+      "员工留存率",
+      "培训完成率"
+    ],
+    "reference_keywords": [
+      "人事部",
+      "招聘周期",
+      "员工留存率"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 324,
+    "question": "每条运营指标记录必须包含哪些字段？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "Date",
+      "Metric",
+      "Value",
+      "Target"
+    ],
+    "reference_keywords": [
+      "运营数据字段",
+      "Date",
+      "Metric",
+      "Rate"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 325,
+    "question": "完成率出现什么情况会被判定为数据质量问题？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "完成率 > 200%",
+      "完成率 < 50%",
+      "数据可疑"
+    ],
+    "reference_keywords": [
+      "完成率",
+      "200%",
+      "数据可疑"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 326,
+    "question": "运营数据质量管理的核心目标是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "准确率 ≥ 98%",
+      "及时率 ≥ 95%",
+      "48 小时"
+    ],
+    "reference_keywords": [
+      "准确率",
+      "98%",
+      "及时率"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 327,
+    "question": "运营数据质量从哪几个维度评估？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "完整性",
+      "准确性",
+      "及时性",
+      "一致性"
+    ],
+    "reference_keywords": [
+      "质量维度",
+      "完整性",
+      "一致性"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 328,
+    "question": "各质量维度的权重分别是多少？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "30%",
+      "35%",
+      "20%",
+      "15%"
+    ],
+    "reference_keywords": [
+      "权重",
+      "30%",
+      "35%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 329,
+    "question": "完整性检查要求哪些字段都填写？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "Date",
+      "Metric",
+      "Unit",
+      "Rate"
+    ],
+    "reference_keywords": [
+      "完整性",
+      "必填字段",
+      "Target"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 330,
+    "question": "准确性检查对指标数值范围有什么要求？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "Value 和 Target",
+      "正数",
+      "0-500"
+    ],
+    "reference_keywords": [
+      "准确性",
+      "正数",
+      "0-500"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 331,
+    "question": "运营数据的填报截止时间是什么时候？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "每月第 3 个工作日",
+      "18:00",
+      "截止时间"
+    ],
+    "reference_keywords": [
+      "截止时间",
+      "第 3 个工作日",
+      "18:00"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 332,
+    "question": "超过截止时间5个工作日还没提交会怎么样？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "5 个工作日",
+      "严重延迟",
+      "部门考核扣分"
+    ],
+    "reference_keywords": [
+      "严重延迟",
+      "5 个工作日",
+      "扣分"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 333,
+    "question": "运营指标分成哪几个类别？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "流量类",
+      "活跃类",
+      "满意度类",
+      "营收类"
+    ],
+    "reference_keywords": [
+      "指标分类",
+      "流量类",
+      "营收类"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 334,
+    "question": "运营数据的自动核查流程是怎样的？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "完整性检查",
+      "准确性检查",
+      "自动比对"
+    ],
+    "reference_keywords": [
+      "自动核查",
+      "完整性检查",
+      "自动比对"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 335,
+    "question": "什么情况下会触发人工核查？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "偏差超过 5%",
+      "±30%",
+      "人工核查"
+    ],
+    "reference_keywords": [
+      "人工核查",
+      "5%",
+      "±30%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 336,
+    "question": "运营数据异常分成哪几个级别？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "轻微",
+      "中等",
+      "严重"
+    ],
+    "reference_keywords": [
+      "异常分级",
+      "轻微",
+      "严重"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 337,
+    "question": "严重级别异常的处理时效和审批层级是什么？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "4 小时内响应",
+      "运营管理部",
+      "管理层"
+    ],
+    "reference_keywords": [
+      "严重",
+      "4 小时内响应",
+      "管理层"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 338,
+    "question": "运营数据异常的常见原因有哪些？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "数据源异常",
+      "填报失误",
+      "口径不一致",
+      "时延差异"
+    ],
+    "reference_keywords": [
+      "异常原因",
+      "填报失误",
+      "口径不一致"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 339,
+    "question": "大促期间运营数据的异常检测规则有什么调整？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "环比波动",
+      "完整性检查",
+      "Rate > 300%"
+    ],
+    "reference_keywords": [
+      "大促",
+      "环比波动",
+      "Rate > 300%"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 340,
+    "question": "月度数据质量报告包含哪些内容？",
+    "expected_intent": "doc_query",
+    "expected_tools": [],
+    "expected_doc_keywords": [
+      "数据质量评分排名",
+      "异常数据清单",
+      "改进建议"
+    ],
+    "reference_keywords": [
+      "质量报告",
+      "评分排名",
+      "异常数据清单"
+    ],
+    "category": "doc_query",
+    "source": "regression"
+  },
+  {
+    "id": 341,
+    "question": "郑十11月为什么被标记为异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "employee_name": "郑十"
+      }
+    },
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "加班时长",
+      "异常数据认定标准"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "异常原因",
+      "请假天数",
+      "加班时长"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 342,
+    "question": "客服部11月那条考勤异常的异常原因是什么，按制度该由谁跟进处理？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "attendance",
+        "department": "客服部"
+      }
+    },
+    "expected_doc_keywords": [
+      "加班时长",
+      "书面说明",
+      "人力资源部审核",
+      "考勤异常"
+    ],
+    "reference_keywords": [
+      "客服部",
+      "加班时长偏高",
+      "书面说明"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 343,
+    "question": "11月加班时长最高的员工是谁，他这条记录为什么算异常？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "加班时长上限",
+      "36小时",
+      "考勤异常",
+      "IQR"
+    ],
+    "reference_keywords": [
+      "李四",
+      "80小时",
+      "加班时长"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 344,
+    "question": "销售部11月的异常记录都有哪些，各自触发的原因是什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "department": "销售部"
+      }
+    },
+    "expected_doc_keywords": [
+      "加班时长",
+      "订单数量",
+      "异常数据处理流程",
+      "常见异常原因分类"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "李四",
+      "孙七",
+      "异常原因"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 345,
+    "question": "考勤制度对“请假天数异常”是怎么认定的，11月有人触发吗？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "请假天数异常判定",
+      "单月请假天数",
+      "人工复核",
+      "季度累计请假"
+    ],
+    "reference_keywords": [
+      "请假天数",
+      "5天",
+      "郑十"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 346,
+    "question": "孙七11月26日那条销售异常，按规范属于哪一类常见异常原因？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "employee_name": "孙七",
+        "data_type": "sales"
+      }
+    },
+    "expected_doc_keywords": [
+      "常见异常原因分类",
+      "录入错误",
+      "订单数量",
+      "人工审核"
+    ],
+    "reference_keywords": [
+      "孙七",
+      "11月26日",
+      "订单数量",
+      "录入错误"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 347,
+    "question": "11月哪名员工的异常记录最多，分别属于哪类问题？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_doc_keywords": [
+      "异常数据认定标准",
+      "加班时长",
+      "请假天数"
+    ],
+    "reference_keywords": [
+      "郑十",
+      "两条",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 348,
+    "question": "销售部11月的订单金额有没有超过“需补合同扫描件”的那条线？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "sales",
+        "department": "销售部"
+      }
+    },
+    "expected_doc_keywords": [
+      "订单金额异常判定标准",
+      "500000",
+      "合同扫描件",
+      "特大订单"
+    ],
+    "reference_keywords": [
+      "销售部",
+      "订单金额",
+      "50万"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 349,
+    "question": "11月销售数据的质量分是多少，按规范属于哪个等级？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "sales"
+      }
+    },
+    "expected_doc_keywords": [
+      "质量分等级",
+      "质量分评估",
+      "优秀",
+      "待改进"
+    ],
+    "reference_keywords": [
+      "销售",
+      "质量分",
+      "等级"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 350,
+    "question": "11月有没有客户的合同金额触发“异常升高”的判定？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "合同金额异常判定",
+      "合同金额异常升高",
+      "历史平均合同额",
+      "商务审核"
+    ],
+    "reference_keywords": [
+      "客户",
+      "合同金额",
+      "异常升高"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 351,
+    "question": "11月的客户记录里，有多少条已经构成“客户跟进异常”？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "跟进时效预警",
+      "客户跟进异常",
+      "30天未跟进",
+      "部门管理考核"
+    ],
+    "reference_keywords": [
+      "客户",
+      "跟进",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 352,
+    "question": "A级客户11月的跟进频率达到制度要求了吗？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "跟进频率要求",
+      "A级",
+      "每月至少1次",
+      "跟进记录要求"
+    ],
+    "reference_keywords": [
+      "A级客户",
+      "跟进频率",
+      "每月"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 353,
+    "question": "11月哪些运营指标超出了正常区间、需要提供说明？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "operation"
+      }
+    },
+    "expected_doc_keywords": [
+      "营收完成率",
+      "完成率低于70%",
+      "高于150%",
+      "异常判定"
+    ],
+    "reference_keywords": [
+      "运营指标",
+      "完成率",
+      "说明"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 354,
+    "question": "运营数据质量的四个维度权重各是多少，11月运营部达标了吗？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "operation"
+      }
+    },
+    "expected_doc_keywords": [
+      "四维质量评估",
+      "完整性",
+      "准确性",
+      "及时性"
+    ],
+    "reference_keywords": [
+      "运营数据",
+      "质量",
+      "权重"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 355,
+    "question": "11月哪个部门的考勤数据质量分最低，按制度要做什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "数据质量要求",
+      "质量分低于0.6",
+      "3个工作日",
+      "数据整改"
+    ],
+    "reference_keywords": [
+      "考勤",
+      "质量分",
+      "部门"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 356,
+    "question": "11月各部门的加班强度对比，有没有部门需要启动加班合理性审查？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats",
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "部门加班预警",
+      "月人均加班",
+      "36小时",
+      "红色预警"
+    ],
+    "reference_keywords": [
+      "加班",
+      "部门",
+      "预警"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 357,
+    "question": "11月销售部和客服部的迟到情况，哪个更接近预警线？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "迟到与早退",
+      "迟到次数",
+      "5次",
+      "人力资源部预警"
+    ],
+    "reference_keywords": [
+      "迟到次数",
+      "销售部",
+      "客服部"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 358,
+    "question": "11月全公司的出勤天数有没有达到制度规定的下限？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_summary_stats": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "出勤天数标准",
+      "80%",
+      "法定工作日",
+      "出勤异常"
+    ],
+    "reference_keywords": [
+      "出勤天数",
+      "下限",
+      "11月"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 359,
+    "question": "大促期间的加班上限按制度是多少，11月销售部有没有人超？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "attendance",
+        "department": "销售部"
+      }
+    },
+    "expected_doc_keywords": [
+      "大促保障加班",
+      "60小时",
+      "加班时长上限",
+      "超出部分仍标记为异常"
+    ],
+    "reference_keywords": [
+      "大促",
+      "加班上限",
+      "销售部"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 360,
+    "question": "11月是大促月，运营指标的目标值按手册上调了多少，实际完成了吗？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "operation"
+      }
+    },
+    "expected_doc_keywords": [
+      "目标值临时上调",
+      "网站访问量",
+      "15,000",
+      "上调幅度"
+    ],
+    "reference_keywords": [
+      "运营指标",
+      "目标值",
+      "大促"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 361,
+    "question": "11月销售数据有没有打上大促标签，漏打会有什么影响？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "sales",
+        "date_start": "2025-11-01",
+        "date_end": "2025-11-15"
+      }
+    },
+    "expected_doc_keywords": [
+      "大促数据标签",
+      "promotion_1111",
+      "business_data",
+      "大促标签"
+    ],
+    "reference_keywords": [
+      "大促标签",
+      "销售数据",
+      "promotion_1111"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 362,
+    "question": "大促期间销售异常的判定基准按制度该怎么切换，11月上中旬实际是怎么判的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "sales"
+      }
+    },
+    "expected_doc_keywords": [
+      "对比基准切换",
+      "去年同期大促数据",
+      "IQR",
+      "阈值浮动机制"
+    ],
+    "reference_keywords": [
+      "大促",
+      "判定基准",
+      "异常"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 363,
+    "question": "11月大促期间成交的订单里，有没有金额超过合同核验线、需要提交合同的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "sales",
+        "date_start": "2025-11-01",
+        "date_end": "2025-11-15"
+      }
+    },
+    "expected_doc_keywords": [
+      "单笔订单金额上限",
+      "1,000,000",
+      "合同核验",
+      "大促期间"
+    ],
+    "reference_keywords": [
+      "大促",
+      "订单金额",
+      "合同核验"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 364,
+    "question": "11月有没有合同到期长期未续约、按标准该降级的客户？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "合同到期管理",
+      "60天未续约",
+      "D级客户",
+      "流失客户"
+    ],
+    "reference_keywords": [
+      "合同到期",
+      "未续约",
+      "D级"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 365,
+    "question": "11月客户记录里有多少条联系电话不符合规范？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "电话字段校验规则",
+      "联系电话异常",
+      "11位数字",
+      "正则校验"
+    ],
+    "reference_keywords": [
+      "客户",
+      "联系电话",
+      "格式"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 366,
+    "question": "11月客户名称有没有重复录入、需要去重的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "客户名称去重规则",
+      "模糊匹配",
+      "相似度",
+      "疑似重复客户"
+    ],
+    "reference_keywords": [
+      "客户名称",
+      "重复",
+      "去重"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 367,
+    "question": "11月哪个部门的异常率最高，这个水平在制度上意味着什么？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "异常数据处理流程",
+      "部门管理考核",
+      "部门加班预警",
+      "人工审核"
+    ],
+    "reference_keywords": [
+      "部门",
+      "异常率",
+      "最高"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 368,
+    "question": "11月的客户等级分布，和制度里A/B/C级的准入标准对得上吗？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats",
+      "query_cleaned_records"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "customer"
+      }
+    },
+    "expected_doc_keywords": [
+      "准入标准",
+      "A级客户",
+      "年度合同金额",
+      "C级客户"
+    ],
+    "reference_keywords": [
+      "客户等级",
+      "A级",
+      "准入标准"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 369,
+    "question": "11月哪些考勤异常是可以通过人工审核解除的？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "attendance"
+      }
+    },
+    "expected_doc_keywords": [
+      "异常数据认定标准",
+      "人工审核确认或解除",
+      "LLM辅助判定",
+      "加班时长"
+    ],
+    "reference_keywords": [
+      "考勤异常",
+      "人工审核",
+      "解除"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 370,
+    "question": "11月各产品线的销售表现，按大促规则的产品维度条款该怎么解读？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "query_cleaned_records",
+      "get_summary_stats"
+    ],
+    "expected_args": {
+      "query_cleaned_records": {
+        "data_type": "sales"
+      }
+    },
+    "expected_doc_keywords": [
+      "产品维度差异",
+      "产品A",
+      "产品C",
+      "大促期间"
+    ],
+    "reference_keywords": [
+      "产品",
+      "销售",
+      "大促"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 371,
+    "question": "11月大促结束后，标注了“大促因素”的异常记录该怎么清理？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_anomaly_details"
+    ],
+    "expected_args": {
+      "get_anomaly_details": {
+        "data_type": "sales"
+      }
+    },
+    "expected_doc_keywords": [
+      "大促后数据清理",
+      "5个工作日",
+      "解除异常标记",
+      "大促业务合理"
+    ],
+    "reference_keywords": [
+      "大促",
+      "异常记录",
+      "清理"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 372,
+    "question": "11月各数据类型里异常率最高的是哪一类，这类数据的异常按制度怎么认定？",
+    "expected_intent": "hybrid",
+    "expected_tools": [
+      "get_summary_stats"
+    ],
+    "expected_doc_keywords": [
+      "异常数据认定标准",
+      "IQR",
+      "离群检测",
+      "人工审核"
+    ],
+    "reference_keywords": [
+      "异常率",
+      "数据类型",
+      "认定标准"
+    ],
+    "category": "hybrid",
+    "source": "regression"
+  },
+  {
+    "id": 373,
+    "question": "哈喽",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 374,
+    "question": "请问你是谁呀？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 375,
+    "question": "你能做些什么？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 376,
+    "question": "现在几点了？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 377,
+    "question": "帮我写一首关于加班的打油诗",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 378,
+    "question": "午饭有什么推荐吗？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 379,
+    "question": "你觉得周末去哪玩比较好？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 380,
+    "question": "帮我翻译一句英文",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 381,
+    "question": "帮我把全公司员工的绩效考核结果都列出来",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 382,
+    "question": "帮我查一下李四家的住址",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 383,
+    "question": "把全部客户的联系方式和合同金额导出成一个表发给我",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 384,
+    "question": "帮我登录财务系统查一下这个月的回款",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 385,
+    "question": "帮我把郑十11月那条异常记录直接删掉",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 386,
+    "question": "给我一个能看所有部门数据的最高权限账号",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 387,
+    "question": "公司的停车费怎么报销？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 388,
+    "question": "名片印制要走什么申请流程？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 389,
+    "question": "员工股权激励什么时候能兑现？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 390,
+    "question": "公司有班车吗，路线是怎么安排的？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 391,
+    "question": "生育津贴的申领标准是多少？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 392,
+    "question": "补充医疗保险覆盖哪些项目？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 393,
+    "question": "最近的数据怎么样？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 394,
+    "question": "那个异常后来怎么处理了？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 395,
+    "question": "这些指标都达标了吗？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 396,
+    "question": "帮我看看有没有问题",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 397,
+    "question": "那销售部呢？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 398,
+    "question": "换成下旬",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 399,
+    "question": "再按类型拆一下",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  },
+  {
+    "id": 400,
+    "question": "还有哪些？",
+    "expected_intent": "",
+    "expected_tools": [],
+    "reference_keywords": [],
+    "category": "edge_case",
+    "source": "regression"
+  }
+]

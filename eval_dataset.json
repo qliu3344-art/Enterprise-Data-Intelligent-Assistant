@@ -163,7 +163,7 @@
   {
     "id": 20,
     "question": "hello world",
-    "expected_intent": "data_query",
+    "expected_intent": "",
     "expected_tools": [],
     "reference_keywords": [],
     "category": "edge_case"
