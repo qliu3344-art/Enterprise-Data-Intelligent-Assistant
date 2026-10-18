@@ -24,6 +24,8 @@ echo   API文档: http://localhost:8002/docs
 echo   按 Ctrl+C 停止
 echo.
 
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8002
+REM --loop 指定事件循环工厂：Windows 默认的 ProactorEventLoop 用不了 psycopg 的异步
+REM 模式（会话检查点要用），而 uvicorn 在 win32 上是绕过全局策略显式选 Proactor 的。
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8002 --loop app.main:selector_loop_factory
 
 pause

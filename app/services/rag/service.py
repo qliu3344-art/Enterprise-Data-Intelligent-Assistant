@@ -92,6 +92,7 @@ def ask_rag(question: str, top_k: int = 5) -> dict:
         dashscope_api_key=settings.DASHSCOPE_API_KEY,
         temperature=0.1,
         max_tokens=800,
+        model_kwargs={"request_timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS},
     )
 
     prompt = RAG_PROMPT.format(context=context, question=question)

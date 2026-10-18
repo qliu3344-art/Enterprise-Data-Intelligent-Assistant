@@ -1,6 +1,10 @@
 fastapi>=0.115.0
 uvicorn>=0.30.0
 sqlalchemy>=2.0.35
+psycopg[binary]>=3.2
+pgvector>=0.3.0
+# 应用自身存储已迁到 PostgreSQL；PyMySQL 保留是因为 MySQLConnector 仍用它
+# 读取「业务库里的 MySQL 表」——那是四类数据源之一，不是遗留物。
 PyMySQL>=1.1.0
 pandas>=2.0.0
 numpy>=1.24.0
@@ -11,9 +15,10 @@ python-multipart>=0.0.12
 langchain>=0.3.0
 langchain-community>=0.3.0
 langgraph>=1.0.0
-langgraph-checkpoint-sqlite>=3.0.0
-aiosqlite>=0.20.0
+# 会话检查点落 Postgres（单独的 agent_checkpoints 库），不用 SQLite：
+# 它是库级写锁，几百人并发时写入排队会抛 database is locked。
+langgraph-checkpoint-postgres>=3.0.0
+psycopg-pool>=3.2
 sentence-transformers>=2.7.0
-chromadb>=0.5.0
 rank-bm25>=0.2.2
 mcp>=1.28,<2

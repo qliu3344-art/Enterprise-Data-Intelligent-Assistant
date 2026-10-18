@@ -1,257 +1,406 @@
-"""向量存储：ChromaDB 持久化 + 自动索引管理。
+"""向量存储：pgvector，与业务数据同库。
 
-启动时检查文档是否变更（通过 checksum），自动决定是否重建索引。
-支持按 source（文档名）维度删除和更新。
+替代原 ChromaDB 实现。对外契约保持不变（index_all / needs_reindex /
+get_document_stats / search 的签名与返回结构一字未改），消费方无需改动。
+
+三处刻意的差异：
+
+1. **相似度标度是 `1 - distance/2`，不是 `1 - distance`。**
+   Chroma 的 hnsw:space=cosine 距离是 d = 1 - cos ∈ [0,2]，而 pgvector 的
+   `<=>` 返回完全相同的量。旧代码的 `1 - d/2` 展开就是 `0.5 + 0.5*cos` ——
+   正交文本得 0.5，不是 0。memory_store 那几个阈值全标定在这个标度上。
+
+2. **不建向量索引。** 理由见 app/models/doc_chunk.py。
+
+3. **增量重建是单事务。** 旧实现是「先删旧向量 → 再向量化 → 最后写 checksum
+   文件」，中间抛异常（embed 时 OOM / 模型下载失败 / Ctrl-C）就会留下
+   「向量已删、checksum 还是旧的」，下次启动据此判定「没变」，这份文档
+   从此再也不会被索引。同库同事务把这条失败路径变成回滚。
 """
 
 import hashlib
 import json
-import os
-from pathlib import Path
+from datetime import datetime
 from typing import List, Optional
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
+from sqlalchemy import delete, func, insert, literal, or_, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from app.database import Base, SessionLocal, engine
 from app.logger import logger
-from app.services.rag.chunker import Chunk, chunk_all
-from app.services.rag.document_loader import load_all_documents
-from app.services.rag.embedder import embed_documents, embed_query
+from app.models.business_convention import BusinessConvention
+from app.models.doc_chunk import DocChunk, DocIndexState
+from app.services.rag.chunker import chunk_all
+from app.services.rag.document_loader import load_all_documents, parse_effective_date
+from app.services.rag.embedder import embed_documents
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-CHROMA_PATH = PROJECT_ROOT / "data" / "chroma_db"
-COLLECTION_NAME = "enterprise_policies"
-
-_client: Optional[chromadb.PersistentClient] = None
-_collection: Optional[object] = None
+_schema_ready = False
 
 
-def _get_client() -> chromadb.PersistentClient:
-    """获取 ChromaDB 持久化客户端（单例）。"""
-    global _client
-    if _client is None:
-        os.makedirs(str(CHROMA_PATH), exist_ok=True)
-        _client = chromadb.PersistentClient(
-            path=str(CHROMA_PATH),
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
-        logger.info(f"ChromaDB 已连接: {CHROMA_PATH}")
-    return _client
+def ensure_schema() -> None:
+    """幂等建表：CREATE EXTENSION + 本模块用到的三张表。
+
+    Chroma 的 get_or_create_collection 会自举存储，PostgreSQL 不会。而
+    app/main.py 启动时调 index_all() 是包在 except 里只打 warning 的 ——
+    表不存在会被静默吞掉：服务正常启动、/rag/health 报 not_indexed、
+    没有任何错误日志。所以表必须在这里自举出来。
+    """
+    global _schema_ready
+    if _schema_ready:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            DocChunk.__table__,
+            DocIndexState.__table__,
+            BusinessConvention.__table__,
+        ],
+    )
+    _schema_ready = True
 
 
-def get_collection():
-    """获取或创建 collection（不删除已有数据）。"""
-    global _collection
-    if _collection is None:
-        client = _get_client()
-        _collection = client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"},
-        )
-    return _collection
+# ── 相似度标度 ──────────────────────────────────────────────────────
+# 与旧 Chroma 实现逐位一致，改这里等于改掉 memory_store 三个阈值的语义：
+#   Chroma hnsw:space=cosine 的 distance = 1 - cos_sim ∈ [0,2]
+#   pgvector 的 `<=>` 返回完全相同的量
+#   旧代码 score = 1 - distance/2 = 0.5 + 0.5*cos_sim ∈ [0,1]
+# 即正交文本得 0.5、完全相同得 1.0。去掉 /2 会让所有阈值整体移位一倍。
+def similarity_expr(distance):
+    """把 pgvector 的余弦距离换算成与旧实现一致的相似度。
+
+    memory_store 也导入这个函数——它那几个阈值和这里是同一套标度，
+    两处必须用同一个表达式，不能各写一份。
+    """
+    return literal(1.0) - distance / literal(2.0)
 
 
-def _compute_doc_checksum(content: str) -> str:
-    """单份文档内容的 md5 指纹。"""
+def _live_filter():
+    """生效日期过滤：只返回当前已生效的条款。
+
+    NULL 视为「长期有效」（解析失败时的兜底）。写成裸的
+    `effective_date <= CURRENT_DATE` 会把解析失败的制度静默排除出检索。
+
+    ⚠️ search() 与 dump_corpus() 必须共用这一个函数：两条召回通道若过滤
+    条件不一致，BM25 和向量就指向不同的语料，RRF 融合的结果不可信。
+    """
+    return or_(
+        DocChunk.effective_date.is_(None),
+        DocChunk.effective_date <= func.current_date(),
+    )
+
+
+# ── 指纹 ────────────────────────────────────────────────────────────
+def _chunk_checksum(content: str) -> str:
+    """单条 chunk 正文的 md5。"""
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def _compute_docs_checksums(documents) -> dict:
-    """计算所有文档的 {file_name: md5} 映射。"""
-    return {doc.file_name: _compute_doc_checksum(doc.content) for doc in documents}
+def _doc_checksum(document) -> str:
+    """整份文档的指纹：正文 + frontmatter 元数据。
 
-
-def _checksum_path() -> Path:
-    """获取 checksum 缓存文件路径。"""
-    return CHROMA_PATH / ".docs_checksum"
-
-
-def _load_stored_checksums() -> dict:
-    """加载已持久化的 per-document checksum 映射。
-
-    兼容旧版本：旧版存的是全局 md5 字符串，非 dict 一律视为空，
-    触发一次全量重建以迁移到新格式。
+    必须把元数据算进去 —— 生效日期来自 frontmatter，正文没变而 frontmatter
+    变了时（制度改版只改生效日期），只哈希正文会判定「没变」，effective_date
+    列就永远停在旧值上。
     """
-    path = _checksum_path()
-    if not path.exists():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        return {}
-
-
-def _save_checksums(checksums: dict) -> None:
-    """持久化 per-document checksum 映射。"""
-    os.makedirs(str(CHROMA_PATH), exist_ok=True)
-    _checksum_path().write_text(
-        json.dumps(checksums, ensure_ascii=False, indent=2, sort_keys=True),
-        encoding="utf-8",
+    payload = document.content + "\n" + json.dumps(
+        document.metadata, ensure_ascii=False, sort_keys=True
     )
+    return hashlib.md5(payload.encode("utf-8")).hexdigest()
+
+
+def _chunk_key(c) -> tuple:
+    """chunk 在文档内的稳定身份。"""
+    return (c.file_name, c.chunk_index)
+
+
+def _chunk_metadata(c) -> dict:
+    """chunk 的元数据（对外契约，service.py 依赖这四个键名）。"""
+    return {
+        "doc_title": c.doc_title,
+        "file_name": c.file_name,
+        "chapter": c.chapter or "",
+        "section": c.section or "",
+    }
+
+
+# ── 索引状态 ────────────────────────────────────────────────────────
+def _load_stored_checksums(db) -> dict:
+    """读取已索引文档的 {file_name: doc_checksum}。"""
+    rows = db.execute(
+        select(DocIndexState.file_name, DocIndexState.content_hash)
+    ).all()
+    return {r.file_name: r.content_hash for r in rows}
 
 
 def needs_reindex() -> bool:
     """检查是否有文档新增、删除或内容变更（per-document 比对）。"""
+    ensure_schema()
     documents = load_all_documents()
     if not documents:
         return False
-    current = _compute_docs_checksums(documents)
-    stored = _load_stored_checksums()
-    return current != stored
-
-
-def _chunk_id(file_name: str, chunk_index: int) -> str:
-    """生成稳定的 chunk 唯一 ID（file_name + 文档内序号），增量写入不撞车。"""
-    return f"{file_name}#{chunk_index}"
-
-
-def _chunk_metadata(c: Chunk) -> dict:
-    """构建 chunk 的 ChromaDB metadata。"""
-    return {
-        "doc_title": c.doc_title,
-        "file_name": c.file_name,
-        "chapter": c.chapter[:200] if c.chapter else "",
-        "section": c.section[:200] if c.section else "",
-    }
-
-
-def _clear_collection(collection) -> None:
-    """清空 collection 中所有向量（保留 collection，避免窗口期查询报错）。"""
-    existing = collection.get()
-    if existing and existing.get("ids"):
-        collection.delete(ids=existing["ids"])
-        logger.info(f"已清空 {len(existing['ids'])} 条旧向量")
-
-
-def _index_documents(collection, documents) -> int:
-    """分块 + 向量化 + 写入，返回写入的 chunk 数。"""
-    chunks = chunk_all(documents)
-    texts = [c.text for c in chunks]
-    embeddings = embed_documents(texts)
-
-    batch_size = 50
-    for i in range(0, len(chunks), batch_size):
-        end = min(i + batch_size, len(chunks))
-        batch = chunks[i:end]
-        collection.add(
-            ids=[_chunk_id(c.file_name, c.chunk_index) for c in batch],
-            embeddings=embeddings[i:end],
-            documents=[c.text for c in batch],
-            metadatas=[_chunk_metadata(c) for c in batch],
-        )
-    return len(chunks)
+    current = {d.file_name: _doc_checksum(d) for d in documents}
+    db = SessionLocal()
+    try:
+        return current != _load_stored_checksums(db)
+    finally:
+        SessionLocal.remove()
 
 
 def index_all(force: bool = False) -> dict:
-    """加载文档 → 分块 → 向量化 → 写入 ChromaDB。
+    """加载文档 → 分块 → 向量化 → 写入 pgvector。
 
-    force=False：per-document 增量——只重算新增/变更的文档、删除已移除的文档，
-                 未变更的零成本跳过。
-    force=True：全量重建（清空后重算所有文档）。
+    force=False：per-document + per-chunk 两级增量。文档没变就整份跳过；
+    文档变了但某条 chunk 正文的哈希没变，则直接复用旧向量、不重新向量化。
+
+    force=True：全量重建。
 
     Returns:
         {"documents", "chunks", "reindexed", "added", "updated", "removed"}
     """
+    ensure_schema()
     documents = load_all_documents()
     if not documents:
         return {"documents": 0, "chunks": 0, "reindexed": False,
                 "added": 0, "updated": 0, "removed": 0}
 
-    current = _compute_docs_checksums(documents)
-    stored = _load_stored_checksums()
-    collection = get_collection()
+    current = {d.file_name: _doc_checksum(d) for d in documents}
 
-    # —— 全量重建：force=True，或首次迁移（旧全局 md5 格式 → 无法 diff）——
-    if force or (not stored and collection.count() > 0):
-        _clear_collection(collection)
-        count = _index_documents(collection, documents)
-        _save_checksums(current)
-        logger.info(f"全量索引完成: {len(documents)} 份文档 → {count} chunks")
-        return {"documents": len(documents), "chunks": count, "reindexed": True,
-                "added": len(documents), "updated": 0, "removed": 0}
+    db = SessionLocal()
+    try:
+        # ═══════════ 单事务开始：删旧与插新必须一起提交或一起回滚 ═══════════
+        stored = _load_stored_checksums(db)
 
-    # —— 无变更，跳过 ——
-    if current == stored:
-        count = collection.count()
-        logger.info(f"文档未变更，跳过索引（已有 {count} 个向量）")
-        return {"documents": len(documents), "chunks": count, "reindexed": False,
-                "added": 0, "updated": 0, "removed": 0}
+        if force:
+            added, updated, removed = sorted(current), [], sorted(stored)
+        else:
+            added = [n for n in current if n not in stored]
+            updated = [n for n in current if n in stored and current[n] != stored[n]]
+            removed = [n for n in stored if n not in current]
 
-    # —— per-document 增量 ——
-    added = [name for name in current if name not in stored]
-    removed = [name for name in stored if name not in current]
-    updated = [name for name in current if name in stored and current[name] != stored[name]]
+        if not (force or added or updated or removed):
+            total = db.scalar(select(func.count()).select_from(DocChunk)) or 0
+            logger.info(f"文档未变更，跳过索引（已有 {total} 个向量）")
+            return {"documents": len(documents), "chunks": total, "reindexed": False,
+                    "added": 0, "updated": 0, "removed": 0}
 
-    # 删除已移除文档的旧向量
-    for name in removed:
-        collection.delete(where={"file_name": name})
-        logger.info(f"已删除移除文档的向量: {name}")
+        # ── 1. 分块（纯 CPU，不碰模型）──
+        changed_names = set(added) | set(updated)
+        changed_docs = [d for d in documents if d.file_name in changed_names]
+        new_chunks = chunk_all(changed_docs)
+        new_hash = {_chunk_key(c): _chunk_checksum(c.text) for c in new_chunks}
 
-    # 变更文档：先删旧向量，再重新写入
-    for name in updated:
-        collection.delete(where={"file_name": name})
-        logger.info(f"已删除变更文档的旧向量: {name}")
+        # ── 2. chunk 级哈希比对 ──
+        # 必须在调 embed 之前做：chunk 哈希唯一的用处就是跳过向量化，
+        # 而 SQL 侧的 ON CONFLICT ... WHERE hash <> 要求你先把新向量算出来
+        # 才能写那条语句 —— 模型已经跑完了，白算。
+        old_map = {}
+        if changed_names:
+            rows = db.execute(
+                select(
+                    DocChunk.file_name, DocChunk.chunk_index,
+                    DocChunk.content_hash, DocChunk.embedding, DocChunk.created_at,
+                ).where(DocChunk.file_name.in_(changed_names))
+            ).all()
+            old_map = {(r.file_name, r.chunk_index): r for r in rows}
 
-    to_reindex = added + updated
-    changed_docs = [d for d in documents if d.file_name in to_reindex]
-    _index_documents(collection, changed_docs)
+        need_embed = []
+        vectors: dict = {}
+        created: dict = {}
+        for c in new_chunks:
+            key = _chunk_key(c)
+            prev = old_map.get(key)
+            if prev is not None and prev.content_hash == new_hash[key]:
+                # 条款正文没变 → 复用旧向量，连首次索引时间一起继承
+                vectors[key] = [float(x) for x in prev.embedding]
+                created[key] = prev.created_at
+            else:
+                need_embed.append(c)
+                created[key] = datetime.now()
 
-    _save_checksums(current)
+        if need_embed:
+            embedded = embed_documents([c.text for c in need_embed])
+            vectors.update({_chunk_key(c): v for c, v in zip(need_embed, embedded)})
+
+        # ── 3. 删旧 ──
+        if force:
+            # 用 DELETE 而不是 TRUNCATE：TRUNCATE 要 ACCESS EXCLUSIVE 锁，
+            # 会挡住并发读；DELETE 走 MVCC，读到的要么全是旧、要么全是新。
+            db.execute(delete(DocChunk))
+            db.execute(delete(DocIndexState))
+        elif changed_names or removed:
+            db.execute(
+                delete(DocChunk).where(
+                    DocChunk.file_name.in_(changed_names | set(removed))
+                )
+            )
+        if removed and not force:
+            # 已移除文档的状态行必须一起删。留着的话 next run 仍会把它算进
+            # `removed`，needs_reindex() 就永远返回 True（旧实现靠整份覆写
+            # checksum 文件顺带解决了这件事，这里要显式做）。
+            db.execute(
+                delete(DocIndexState).where(DocIndexState.file_name.in_(removed))
+            )
+
+        # ── 4. 插新 ──
+        if new_chunks:
+            now = datetime.now()
+            changed_keys = {_chunk_key(c) for c in need_embed}
+            db.execute(insert(DocChunk), [
+                {
+                    "file_name": c.file_name,
+                    "chunk_index": c.chunk_index,
+                    "doc_title": c.doc_title,
+                    "chapter": c.chapter or "",
+                    "section": c.section or "",
+                    "content": c.text,
+                    "content_hash": new_hash[_chunk_key(c)],
+                    "embedding": vectors[_chunk_key(c)],
+                    "effective_date": parse_effective_date(c.metadata.get("生效日期")),
+                    "created_at": created[_chunk_key(c)],
+                    # 只有正文真正变过才推进 updated_at，否则继承首次索引时间；
+                    # 这张表每次改版都是整体 delete + insert，updated_at 要是
+                    # 跟着每次重建走，就不能当「内容变更水位」用了。
+                    "updated_at": now if _chunk_key(c) in changed_keys
+                                  else created[_chunk_key(c)],
+                }
+                for c in new_chunks
+            ])
+
+        # ── 5. 文档级状态 ──
+        for name in (sorted(current) if force else added + updated):
+            cnt = sum(1 for c in new_chunks if c.file_name == name)
+            # on_conflict_do_update 是 PG 方言的，通用 insert() 上没有
+            stmt = pg_insert(DocIndexState).values(
+                file_name=name, content_hash=current[name],
+                indexed_at=datetime.now(),
+            )
+            if not force:
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=[DocIndexState.file_name],
+                    set_={"content_hash": current[name], "indexed_at": datetime.now()},
+                )
+            db.execute(stmt)
+
+        total = db.scalar(select(func.count()).select_from(DocChunk)) or 0
+        db.commit()
+        # ═══════════ 单事务提交 ═══════════
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        SessionLocal.remove()
 
     logger.info(
         f"增量索引完成: 新增 {len(added)} / 更新 {len(updated)} / 删除 {len(removed)}，"
-        f"当前 {collection.count()} 个向量"
+        f"当前 {total} 个向量"
     )
-    return {
-        "documents": len(documents),
-        "chunks": collection.count(),
-        "reindexed": True,
-        "added": len(added),
-        "updated": len(updated),
-        "removed": len(removed),
-    }
+    return {"documents": len(documents), "chunks": total, "reindexed": True,
+            "added": len(added), "updated": len(updated), "removed": len(removed)}
 
 
+# ── 查询 ────────────────────────────────────────────────────────────
 def search(query_embedding: List[float], top_k: int = 20) -> list[dict]:
     """向量相似度检索。
 
     Returns:
-        [{"text": str, "metadata": dict, "score": float}, ...]
+        [{"id": int, "text": str, "metadata": dict, "score": float}, ...]
     """
-    collection = get_collection()
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
-        include=["documents", "metadatas", "distances"],
+    ensure_schema()
+    distance = DocChunk.embedding.cosine_distance(query_embedding)
+
+    stmt = (
+        select(
+            DocChunk.id,
+            DocChunk.content,
+            DocChunk.doc_title,
+            DocChunk.file_name,
+            DocChunk.chapter,
+            DocChunk.section,
+            similarity_expr(distance).label("score"),
+        )
+        .where(_live_filter())
+        # 按裸距离排序，不要按 score 降序：包一层算术会让表达式不可索引，
+        # 从「能用索引」静默退化成全表扫描 + 排序，不报错。
+        .order_by(distance)
+        .limit(top_k)
     )
 
-    hits = []
-    if results["ids"] and results["ids"][0]:
-        for i in range(len(results["ids"][0])):
-            distance = results["distances"][0][i] if results["distances"] else 0
-            # Cosine distance ∈ [0,2]，转换为相似度 ∈ [0,1]
-            similarity = 1.0 - (distance / 2.0) if distance else 1.0
-            hits.append({
-                "text": results["documents"][0][i] if results["documents"] else "",
-                "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                "score": round(similarity, 4),
-            })
+    db = SessionLocal()
+    try:
+        rows = db.execute(stmt).all()
+    finally:
+        SessionLocal.remove()
 
-    return hits
+    return [
+        {
+            "id": r.id,
+            "text": r.content,
+            "metadata": {
+                "doc_title": r.doc_title,
+                "file_name": r.file_name,
+                "chapter": r.chapter or "",
+                "section": r.section or "",
+            },
+            "score": round(float(r.score), 4),
+        }
+        for r in rows
+    ]
+
+
+def dump_corpus() -> list[dict]:
+    """全量导出检索语料（替代旧的 get_collection().get(...)）。
+
+    用途：
+      - retriever 在内存里构建 BM25 倒排索引
+      - RRF 融合后按 id 回填原文与元数据
+
+    与 search() 复用同一个 _live_filter()，两条召回通道指向同一份语料；
+    并用 ORDER BY id 保证顺序稳定，且必须带上 id —— 调用方用 id 做反查，
+    不能用文本做键（重叠条款会造出重复文本）。
+    """
+    ensure_schema()
+    db = SessionLocal()
+    try:
+        rows = db.execute(
+            select(
+                DocChunk.id, DocChunk.content, DocChunk.doc_title,
+                DocChunk.file_name, DocChunk.chapter, DocChunk.section,
+            )
+            .where(_live_filter())
+            .order_by(DocChunk.id)
+        ).all()
+    finally:
+        SessionLocal.remove()
+
+    return [
+        {
+            "id": r.id,
+            "text": r.content,
+            "metadata": {
+                "doc_title": r.doc_title,
+                "file_name": r.file_name,
+                "chapter": r.chapter or "",
+                "section": r.section or "",
+            },
+        }
+        for r in rows
+    ]
 
 
 def get_document_stats() -> list[dict]:
-    """获取已索引文档的统计信息。"""
-    collection = get_collection()
-    if collection.count() == 0:
-        return []
+    """获取已索引文档的统计信息（按 doc_title 聚合）。"""
+    ensure_schema()
+    db = SessionLocal()
+    try:
+        rows = db.execute(
+            select(DocChunk.doc_title, func.count().label("chunks"))
+            .group_by(DocChunk.doc_title)
+            .order_by(DocChunk.doc_title)
+        ).all()
+    finally:
+        SessionLocal.remove()
 
-    # 从 metadata 中聚合统计
-    result = collection.get(include=["metadatas"])
-    doc_map: dict[str, int] = {}
-    for meta in result["metadatas"]:
-        doc = meta.get("doc_title", "未知")
-        doc_map[doc] = doc_map.get(doc, 0) + 1
-
-    return [{"document": k, "chunks": v} for k, v in doc_map.items()]
+    return [{"document": r.doc_title, "chunks": r.chunks} for r in rows]

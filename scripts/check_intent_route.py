@@ -143,7 +143,7 @@ check("全部 < 阈值 %.2f（强制走安全网）" % INTENT_CONFIDENCE_THRESHO
       all(c < INTENT_CONFIDENCE_THRESHOLD for c in rule_confs), str(rule_confs))
 check("常量上界 = 0.70", approx(RULE_CONFIDENCE_CAP, 0.70))
 check("上界本身也 < 阈值", RULE_CONFIDENCE_CAP < INTENT_CONFIDENCE_THRESHOLD)
-check("阈值 = 0.75（C_h=1 / C_e=4 推出来的）", approx(INTENT_CONFIDENCE_THRESHOLD, 0.75))
+check("阈值 = 0.99（692 条实测扫出来的便宜区末端）", approx(INTENT_CONFIDENCE_THRESHOLD, 0.99))
 
 # —— 9. 标签表 ——
 print("\n[9] 标签表")

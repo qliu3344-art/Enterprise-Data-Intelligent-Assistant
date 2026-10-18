@@ -53,7 +53,16 @@ def _split_by_headings(text: str) -> list[dict]:
 
         if h2_match:
             if current_section is not None:
-                current_section["body"] = "\n".join(current_body).strip()
+                remaining = "\n".join(current_body).strip()
+                current_section["body"] = remaining
+                # 换章时，累积的这几行属于**本章最后一个 ### 小节**，必须交还给它。
+                # 只写进 chapter 级 body 等于把它丢进黑洞：chunk_document 对有 subsections
+                # 的章只读 subsections、根本不看 chapter body——于是每章最后一条
+                # （第六条迟到、第九条、第十六条…）的正文全部静默消失，条款还在、
+                # 内容没了，检索永远命中不到。文件末尾收尾那段做的是同一件事。
+                if remaining and current_section["subsections"]:
+                    last_sub = current_section["subsections"][-1]
+                    last_sub["body"] = (last_sub["body"] + "\n" + remaining).strip()
             current_section = {
                 "level": 2,
                 "heading": h2_match.group(1).strip(),

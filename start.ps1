@@ -20,7 +20,7 @@ Write-Host "[2/4] 检查配置..." -ForegroundColor Yellow
 if (-not (Test-Path ".env")) { Write-Host "错误: 未找到 .env 文件" -ForegroundColor Red; pause; exit 1 }
 $envContent = Get-Content ".env" -Raw
 if ($envContent -notmatch "DASHSCOPE_API_KEY=") { Write-Host "警告: .env 中未配置 DASHSCOPE_API_KEY" -ForegroundColor Yellow }
-if ($envContent -notmatch "MYSQL_PASSWORD=") { Write-Host "警告: .env 中未配置 MYSQL_PASSWORD" -ForegroundColor Yellow }
+if ($envContent -notmatch "PG_PASSWORD=") { Write-Host "警告: .env 中未配置 PG_PASSWORD" -ForegroundColor Yellow }
 Write-Host "  配置 OK" -ForegroundColor Green
 
 # 3. 检查端口占用
@@ -51,6 +51,8 @@ Start-Sleep -Seconds 1
 Start-Process "http://localhost:8002"
 
 # 启动 uvicorn（前台运行）
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8002
+# --loop 指定事件循环工厂：Windows 默认的 ProactorEventLoop 用不了 psycopg 的异步
+# 模式（会话检查点要用），而 uvicorn 在 win32 上是绕过全局策略显式选 Proactor 的。
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8002 --loop app.main:selector_loop_factory
 
 pause

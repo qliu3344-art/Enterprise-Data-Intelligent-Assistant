@@ -1,5 +1,7 @@
 """企业数据智能助手 — FastAPI 应用入口。"""
 
+import asyncio
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -7,6 +9,25 @@ from fastapi.responses import JSONResponse, FileResponse
 from app.config import settings
 from app.exceptions import AppException
 from app.logger import logger
+
+
+def selector_loop_factory() -> asyncio.AbstractEventLoop:
+    """uvicorn 的事件循环工厂：Windows 上强制用 SelectorEventLoop。
+
+    会话检查点走 psycopg 的异步模式，而 psycopg 明确不支持 Windows 默认的
+    ProactorEventLoop。uvicorn 0.49 在 win32 上是**显式**返回 ProactorEventLoop 的
+    （见 uvicorn.loops.asyncio.asyncio_loop_factory），并且是直接传 loop_factory 给
+    asyncio.run，绕过全局事件循环策略——所以 asyncio.set_event_loop_policy() 在这里
+    不管用，只能从启动参数换掉工厂：
+
+        python -m uvicorn app.main:app --loop app.main:selector_loop_factory
+
+    代价是 SelectorEventLoop 在 Windows 上不支持 asyncio 子进程。本项目没有用到
+    （MCP 是服务端、PDF 解析在进程内），所以这里安全；将来要是引入了 stdio 子进程
+    客户端，这条要重新评估。
+    """
+    return asyncio.SelectorEventLoop()
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -49,7 +70,7 @@ def health_check():
 
 
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} 启动成功")
 
     # L0 参数防线：意图标签单 token 校验，fail fast。
@@ -70,6 +91,13 @@ def on_startup():
             logger.info("RAG 索引已是最新，跳过重建")
     except Exception as e:
         logger.warning(f"RAG 索引初始化跳过（可能首次启动）: {e}")
+
+    # 预热 Agent：会话检查点连不上要在这里就炸出来，而不是等第一个用户提问。
+    # 和上面那条「意图标签单 token 校验」同理——静默降级的代价是「服务看着正常、
+    # 记忆其实没落盘」，那种故障没有告警、没有错误日志，只有事后对不上账。
+    from app.services.query_agent import get_agent
+
+    await get_agent()
 
 
 # —— 路由注册 ——

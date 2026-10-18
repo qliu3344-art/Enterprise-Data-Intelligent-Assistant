@@ -19,13 +19,15 @@ def step(msg):
     print(f"{'='*60}")
 
 
-# ── Step 0: 创建数据库 ──
-step("Step 0: 创建数据库")
-import pymysql
-conn = pymysql.connect(host="localhost", user="root", password="liuqi..2003")
-conn.cursor().execute("CREATE DATABASE IF NOT EXISTS data_processing_platform CHARACTER SET utf8mb4")
-conn.close()
-print("✅ 数据库已就绪")
+# ── Step 0: 确认数据库 ──
+# 库由 DBA 侧预建（PostgreSQL 的 CREATE DATABASE 不能在事务里跑，也不该由应用代劳）。
+# 连接参数见 app/config.py 与 .env。
+step("Step 0: 确认数据库连接")
+from app.database import engine
+
+with engine.connect() as _conn:
+    pass
+print("✅ 数据库连接正常")
 
 # ── Step 1: 建表 ──
 step("Step 1: 创建数据表")

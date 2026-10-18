@@ -70,6 +70,7 @@ def _fuse_hybrid_answer(
             dashscope_api_key=settings.DASHSCOPE_API_KEY,
             temperature=0.1,
             max_tokens=1200,
+            model_kwargs={"request_timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS},
         )
         response = llm.invoke([HumanMessage(content=prompt)])
         return response.content

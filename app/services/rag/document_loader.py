@@ -3,6 +3,7 @@
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import List, Optional
 
@@ -63,6 +64,41 @@ def _extract_title(text: str) -> str:
     """从 Markdown 内容中提取一级标题作为文档标题。"""
     match = re.match(r"^#\s+(.+)", text.strip())
     return match.group(1).strip() if match else "未知文档"
+
+
+# frontmatter 里的「生效日期」形如「2024年1月1日」，另兼容 ISO 的「2024-01-01」
+_CN_DATE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+_ISO_DATE = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
+
+
+def parse_effective_date(raw) -> Optional[date]:
+    """把 frontmatter 的「生效日期」解析成真正的 date。
+
+    Args:
+        raw: 原始值，如「2024年1月1日」
+
+    Returns:
+        解析成功返回 date；解析失败或为空返回 None。
+
+    ⚠️ None 的语义是「长期有效」，不是「未生效」。所以检索侧的过滤条件必须
+    写成 `effective_date IS NULL OR effective_date <= CURRENT_DATE` —— 写成
+    裸的 `<= CURRENT_DATE` 会把解析失败的制度静默排除出检索，表现是
+    「制度上线了但答不出来」，没有任何一处报错。
+    """
+    if not raw:
+        return None
+    text = str(raw).strip()
+    for pattern in (_CN_DATE, _ISO_DATE):
+        m = pattern.search(text)
+        if not m:
+            continue
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            logger.warning(f"生效日期非法，按长期有效处理: {raw!r}")
+            return None
+    logger.warning(f"生效日期无法解析，按长期有效处理: {raw!r}")
+    return None
 
 
 def load_all_documents(docs_dir: Optional[str] = None) -> List[Document]:

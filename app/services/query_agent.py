@@ -7,9 +7,11 @@
   - ChatTongyi：通义千问 LLM 的 LangChain 封装
   - @tool：使用 @tool 装饰器定义自定义工具
   - create_agent：LangChain 1.x 的 Agent 工厂（基于 LangGraph）
-  - MemorySaver Checkpointer：LangGraph 原生状态持久化，通过 thread_id 恢复对话上下文
+  - AsyncPostgresSaver Checkpointer：会话状态落 Postgres，通过 thread_id 恢复上下文
   - Agent 自动完成 Thought → Action → Observation 循环
 """
+
+import asyncio
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -19,7 +21,6 @@ from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_community.chat_models.tongyi import ChatTongyi
 from langchain_core.messages import HumanMessage, RemoveMessage, SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
 
 from app.config import settings
 from app.logger import logger
@@ -31,31 +32,78 @@ from app.services.memory_store import (
 )
 
 # —— 全局 Checkpointer 单例 ——
-# 所有 Agent 实例共享同一个 checkpointer，通过 thread_id 隔离会话
-# 优先使用 SqliteSaver 持久化（服务重启不丢失对话历史），回退 MemorySaver
+# 所有 Agent 实例共享同一个 checkpointer，通过 thread_id 隔离会话。
+#
+# 落 Postgres 而不是 SQLite：会话状态是权威数据，要跨实例共享、要扛住「每轮都写」
+# 的高频小事务。SQLite 是库级写锁，写入只能排队，攒到几百人并发就抛 database is
+# locked——而且是间歇性的、平时不复现。
+#
+# 用 AsyncPostgresSaver 而不是 PostgresSaver：同一个 graph 上既有同步调用也有异步
+# 调用（astream 走 SSE 出口），而 saver 是一类只管一种模式——同步版配 astream 会抛
+# "does not support async methods"，异步版配 invoke 会抛镜像的那句。所以要么全同步、
+# 要么全异步，这里统一走异步。
 
-def _create_checkpointer():
-    """创建 checkpointer，SqliteSaver 优先，MemorySaver 兜底。"""
-    import os
-    from pathlib import Path
+_init_lock = asyncio.Lock()
 
-    # 数据目录
-    data_dir = Path(__file__).resolve().parent.parent.parent / "data"
-    data_dir.mkdir(exist_ok=True)
 
+async def _create_checkpointer():
+    """创建会话检查点。**失败即抛，没有降级。**
+
+    Postgres 在这个项目里是硬依赖——业务数据、向量、会话检查点三样都在里面，
+    所以「PG 挂了但应用还能用」这个状态根本不存在。既然不存在，回退
+    MemorySaver 换来的就不是「降级可用」，而是「看起来健康、实际静默丢记忆」：
+    接口照常 200、日志干净、监控不响，只有对话历史悄悄不落盘。
+    拿不到权威状态就不该假装健康，所以宁可起不来。
+
+    惰性创建而不是模块级立即执行：eval.py 直接 import run_query 跑评测，不经过
+    FastAPI 的 startup 钩子，那边没有现成的事件循环可用。
+
+    调用方须持有 _init_lock。
+    """
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+    from psycopg.rows import dict_row
+    from psycopg_pool import AsyncConnectionPool
+
+    # 先直接判循环类型，而不是等 psycopg 报错再去认那句错误字符串：
+    # pool.open() 默认不等连接（wait=False，立刻返回），真正的连接失败是后面的
+    # setup() 撞上的，那时异常已经是连接池包装过的 PoolTimeout —— 原始的
+    # 「Psycopg cannot use the 'ProactorEventLoop'」只留在池子自己的日志里，
+    # 从异常对象上拿不到。所以这里主动查，而不是被动认。
+    # 现在这条错误会让服务起不来，报准了能省一次排查。
+    if isinstance(asyncio.get_running_loop(), getattr(asyncio, "ProactorEventLoop", ())):
+        raise RuntimeError(
+            "psycopg 的异步模式不能跑在 Windows 默认的 ProactorEventLoop 上。"
+            "启动 uvicorn 时必须带 --loop app.main:selector_loop_factory，"
+            "详见 app/main.py::selector_loop_factory。"
+        )
+
+    # autocommit：checkpointer 自己管事务边界
+    # prepare_threshold=0：连接池里禁用预备语句缓存
+    pool = AsyncConnectionPool(
+        conninfo=settings.CHECKPOINT_DB_URL,
+        min_size=1,
+        max_size=10,
+        open=False,
+        timeout=5,  # 只影响建立连接，不拖慢查询
+        kwargs={
+            "autocommit": True,
+            "row_factory": dict_row,
+            "prepare_threshold": 0,
+        },
+    )
     try:
-        import sqlite3
-
-        from langgraph.checkpoint.sqlite import SqliteSaver
-        db_path = str(data_dir / "agent_checkpoints.db")
-        conn = sqlite3.connect(db_path, check_same_thread=False)
-        logger.info(f"使用 SqliteSaver: {db_path}")
-        return SqliteSaver(conn)
-    except ImportError:
-        logger.warning("SqliteSaver 不可用（pip install langgraph-checkpoint-sqlite），回退 MemorySaver")
-        return MemorySaver()
-
-_checkpointer = _create_checkpointer()
+        await pool.open()
+        saver = AsyncPostgresSaver(pool)
+        await saver.setup()  # 幂等：CREATE TABLE IF NOT EXISTS
+    except Exception as e:
+        # 建到一半失败就把池子关掉，别留一堆后台重连任务在打日志。
+        # 库没建 / 口令不对 / PG 没起，都从这里出来。
+        await pool.close()
+        raise RuntimeError(
+            f"会话检查点初始化失败（库 {settings.CHECKPOINT_DB}）：{e}"
+        ) from e
+    logger.info(f"会话检查点：AsyncPostgresSaver @ {settings.CHECKPOINT_DB}")
+    return saver
 
 # —— System Prompt：指导 LLM 使用工具并输出结构化答案 ——
 SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问企业数据智能助手的数据库。
@@ -73,6 +121,24 @@ SYSTEM_PROMPT = """你是一个专业的数据分析助手，可以访问企业�
 - customer: 客户（客户名称、等级、合同金额、联系电话、跟进日期）
 - operation: 运营（指标名称、数值、单位、目标值、完成率）
 """
+
+
+def _persist_conventions(question: str, answer: str, session_id: str) -> None:
+    """提取并沉淀这一轮交代的业务口径。
+
+    阻塞实现（里面有一次 embedding 和可能的一次 LLM 冲突判定），调用方负责
+    丢线程池 —— 直接在事件循环上跑会把同进程的 SSE 长连接一起卡住。
+
+    作用域由提取器一并判出：会话级临时限定在这里被 save_convention 丢掉，
+    它本来就该留在对话上下文里，不该进长期记忆。
+    """
+    for c in extract_conventions(question, answer):
+        save_convention(
+            c["content"],
+            scope=c["scope"],
+            department=c["department"],
+            session_id=session_id,
+        )
 
 
 def _load_skill_instructions(intent: str) -> str:
@@ -93,15 +159,18 @@ def _load_skill_instructions(intent: str) -> str:
 _agent_instance = None
 
 
-def get_agent():
-    """获取或创建缓存的 Agent 实例（懒加载，线程安全）。"""
+async def get_agent():
+    """获取或创建缓存的 Agent 实例（懒加载；并发的首次调用只建一次）。"""
     global _agent_instance
-    if _agent_instance is None:
-        _agent_instance = _build_agent()
+    if _agent_instance is not None:
+        return _agent_instance
+    async with _init_lock:
+        if _agent_instance is None:
+            _agent_instance = _build_agent(await _create_checkpointer())
     return _agent_instance
 
 
-def _build_agent():
+def _build_agent(checkpointer):
     """构建 Agent（内部函数，仅首次调用时执行）。"""
 
     # —— 工具定义 ——
@@ -146,13 +215,15 @@ def _build_agent():
         dashscope_api_key=settings.DASHSCOPE_API_KEY,
         temperature=0.1,
         max_tokens=1000,
+        # 不传的话 SDK 用 300 秒默认值，网络抖一下这个请求就挂满 5 分钟
+        model_kwargs={"request_timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS},
     )
 
     agent = create_agent(
         model=llm,
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
-        checkpointer=_checkpointer,
+        checkpointer=checkpointer,
     )
 
     return agent
@@ -241,7 +312,7 @@ def _json_to_text(raw: str) -> str:
     return _json.dumps(data, ensure_ascii=False, indent=2)
 
 
-def _apply_context_compression(agent, config: dict, question: str):
+async def _apply_context_compression(agent, config: dict, question: str):
     """三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩。
 
     读历史 → 召回长期记忆 → 压缩历史（窗口+摘要）→ 覆盖写回 checkpointer，
@@ -252,35 +323,40 @@ def _apply_context_compression(agent, config: dict, question: str):
     """
     # 1. 读历史
     try:
-        state = agent.get_state(config)
+        state = await agent.aget_state(config)
     except Exception as e:
         logger.warning(f"读取 checkpointer 历史失败: {e}")
         state = None
     history = list(state.values.get("messages", [])) if state and state.values else []
 
-    # 2. 长期记忆召回
-    memory_msg = build_convention_message(question)
+    # 2、3 两步是同步实现（embedding 与 LLM 调用都会阻塞），丢进线程池——
+    # 否则会把 SSE 那条长连接所在的事件循环一起卡住，一次几秒。
+    # 2. 长期记忆召回。带上 thread_id：候选口径只对它诞生的那个会话可见，
+    #    拿到的是「本会话立即生效、全局生效要审核」里的前一半。
+    memory_msg = await asyncio.to_thread(
+        build_convention_message, question, config.get("configurable", {}).get("thread_id")
+    )
 
     # 3. 滑动窗口 + 摘要压缩
-    compressed = compress_history(history)
+    compressed = await asyncio.to_thread(compress_history, history)
 
     # 4. 覆盖写回 checkpointer（先删旧、再写压缩后，避免历史膨胀）
     if history:
         delete_msgs = [RemoveMessage(id=m.id) for m in history if getattr(m, "id", None)]
         try:
-            agent.update_state(config, {"messages": delete_msgs})
+            await agent.aupdate_state(config, {"messages": delete_msgs})
         except Exception as e:
             logger.warning(f"清空 checkpointer 历史失败: {e}")
     if compressed:
         try:
-            agent.update_state(config, {"messages": compressed})
+            await agent.aupdate_state(config, {"messages": compressed})
         except Exception as e:
             logger.warning(f"写回压缩历史失败: {e}")
 
     return memory_msg
 
 
-def run_query(question: str, db: Session = None, thread_id: str = "default", intent: str = "data_query") -> dict:
+async def run_query(question: str, db: Session = None, thread_id: str = "default", intent: str = "data_query") -> dict:
     """执行一次自然语言数据查询。
 
     Args:
@@ -295,10 +371,10 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
 
     config = {"configurable": {"thread_id": thread_id}}
     try:
-        agent = get_agent()
+        agent = await get_agent()
 
         # —— 三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩 ——
-        memory_msg = _apply_context_compression(agent, config, question)
+        memory_msg = await _apply_context_compression(agent, config, question)
 
         input_messages = []
         if memory_msg is not None:
@@ -309,7 +385,7 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
             input_messages.append(SystemMessage(content=instructions))
         input_messages.append(HumanMessage(content=question))
 
-        result = agent.invoke({"messages": input_messages}, config=config)
+        result = await agent.ainvoke({"messages": input_messages}, config=config)
     except Exception as e:
         logger.error(f"Agent 执行失败: {e}")
         return {
@@ -325,6 +401,11 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
     tools_used = []
     tool_calls = []
 
+    # ⚠️ 这两个分支必须是 if / elif，不能拆成两个并列的 if。
+    # AIMessage 永远带 tool_calls 属性（值是空列表也算「有」），而 System / Human /
+    # Tool 消息都没有。所以写成 `not hasattr(msg, "tool_calls")` 等于「跳过所有 AI 消息」：
+    # answer 会停在最后一条 Tool 或 Human 消息上——调了工具就返回原始 dump、
+    # 没调工具就直接把用户的问题当答案返回（现象是「回声」）。
     for msg in messages:
         if hasattr(msg, "tool_calls") and msg.tool_calls:
             for tc in msg.tool_calls:
@@ -332,7 +413,7 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
                 tool_calls.append(
                     {"name": tc.get("name", "unknown"), "args": tc.get("args", {})}
                 )
-        if hasattr(msg, "content") and msg.content and not hasattr(msg, "tool_calls"):
+        elif hasattr(msg, "content") and msg.content:
             answer = msg.content
 
     if not answer and messages:
@@ -349,8 +430,7 @@ def run_query(question: str, db: Session = None, thread_id: str = "default", int
     logger.info(f"Agent 完成: iterations={iterations}, answer_len={len(answer)}")
 
     # 沉淀业务口径（用户交代过的规则/定义，供后续跨会话遵循）
-    for convention in extract_conventions(question, answer):
-        save_convention(convention)
+    await asyncio.to_thread(_persist_conventions, question, answer, thread_id)
 
     return {
         "question": question,
@@ -375,10 +455,10 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
     config = {"configurable": {"thread_id": thread_id}}
 
     try:
-        agent = get_agent()
+        agent = await get_agent()
 
         # —— 三级上下文管理：长期记忆召回 + 滑动窗口 + 摘要压缩 ——
-        memory_msg = _apply_context_compression(agent, config, question)
+        memory_msg = await _apply_context_compression(agent, config, question)
 
         yield {"event": "agent_start", "data": {"question": question}}
 
@@ -401,7 +481,10 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
             stream_mode="updates",
         ):
             for node_name, node_output in chunk.items():
-                if node_name == "agent":
+                # 节点名是 LangChain 1.x create_agent 定的：model / tools。
+                # 写成 "agent" 匹配不上——不报错，只是 tool_call 事件永不触发、
+                # final_answer 永远是空串，SSE 推出去一个空答案。
+                if node_name == "model":
                     msgs = node_output.get("messages", [])
                     for msg in msgs:
                         if hasattr(msg, "tool_calls") and msg.tool_calls:
@@ -449,6 +532,13 @@ async def run_query_stream(question: str, thread_id: str = "default", intent: st
                 "tool_calls": tool_calls,
             },
         }
+
+        # 沉淀业务口径。放在 answer 之后：答案已经在用户屏幕上了，这一步
+        # （可能有一次 LLM 调用）最多只让 done 晚一点，不挡答案。
+        #
+        # 旧实现的流式路径上完全没有这一步，而前端走的就是这条路 ——
+        # 口径记忆实际上只在不走 SSE 的 /query 接口上生效。
+        await asyncio.to_thread(_persist_conventions, question, final_answer, thread_id)
 
     except Exception as e:
         logger.error(f"Agent 流式执行失败: {e}")

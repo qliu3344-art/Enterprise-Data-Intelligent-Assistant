@@ -15,7 +15,6 @@ data/uploads/*
 data/exports/*
 !data/uploads/.gitkeep
 !data/exports/.gitkeep
-data/agent_checkpoints.db*
 
 # 日志
 logs/*.log
@@ -34,13 +33,9 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# 面试资料（不公开）
-INTERVIEW_GUIDE.md
-
 # 评估报告（历史记录，体积大）
 eval_report_*.json
 eval_dataset_backup_*.json
 
 # 临时文件
 Untitled
-data/chroma_db/

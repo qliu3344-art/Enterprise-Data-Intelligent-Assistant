@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, JSON, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, ForeignKey, Index
 from app.database import Base
 
 
@@ -21,9 +21,12 @@ class SchemaMapping(Base):
     unmapped_columns = Column(JSON, comment="LLM 无法映射的原始列名列表")
 
     # 元信息
-    is_llm_generated = Column(Integer, default=1, comment="是否为 LLM 自动生成")
+    # 这两列语义是布尔，用 Boolean 而不是 Integer：PostgreSQL 不接受往
+    # integer 列写 False（报 invalid input syntax for type integer: "false"），
+    # MySQL 只是静默存成 0，所以这个错一直没暴露出来。
+    is_llm_generated = Column(Boolean, default=True, comment="是否为 LLM 自动生成")
     confidence = Column(Float, comment="LLM 映射置信度")
-    manual_reviewed = Column(Integer, default=0, comment="是否已人工复核")
+    manual_reviewed = Column(Boolean, default=False, comment="是否已人工复核")
 
     created_at = Column(DateTime, default=datetime.now)
 
