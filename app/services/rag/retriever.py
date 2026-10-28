@@ -72,8 +72,8 @@ class HybridRetriever:
         self._corpus = [r["text"] for r in rows]
         self._metadatas = [r["metadata"] for r in rows]
 
-        # 按 id 反查，不能用文本做键：chunker 的重叠条款逻辑和「## 第X章（续）」
-        # 会造出完全相同的文本，文本做键时后写的赢，向量命中会被静默解析到
+        # 按 id 反查，不能用文本做键：同一句话可能在不同块重复出现（章前言/
+        # 条款正文、父子块回填），文本做键时后写的赢，向量命中会被静默解析到
         # 错误的行、挂上错误的 metadata。现在 chunk 有真主键了，用 id。
         self._id_to_idx = {r["id"]: i for i, r in enumerate(rows)}
 
