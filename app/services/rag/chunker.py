@@ -4,7 +4,7 @@
   1. 按 ## 二级标题切章，chunk 不跨章。
   2. 章内以 ### 三级标题（条款）为最小单位，一条一块。
   3. 每块正文开头带 ## 章标题和 ### 条标题，章标题同时进 metadata。
-  4. 无 ### 的章整章一块；超长时按空行段落兜底切分。
+  4. 无 ### 的章整章一块；超长时按空行段落兜底切分，单段仍超长再按句末标点切。
   5. 条款本身不拆；单条超过 MAX_CHUNK_SIZE 只告警，留给后续按款/项二级拆分。
 
 为什么是条款级：制度在业务里的引用单位是「第 X 条」，员工和审计都按条引用；
@@ -18,16 +18,23 @@ from typing import List
 from app.logger import logger
 
 # 单条条款超过这个长度只告警，不在这里拆；拆条会切出半句话。
-MAX_CHUNK_SIZE = 800
+#
+# 为什么是 600 不是 800：embedding 模型 bge-small-zh-v1.5 的窗口是 512 token，
+# 中文实测约 0.81 token/字，512 token ≈ 633 字。原来取 800 时，633~800 字之间的块
+# 会被模型静默截断（向量里少一截）却触不到告警，等于没有保护。600 字 ≈ 485 token，
+# 留出余量。改这个值不会自动重建索引（它不进 _doc_checksum），必须同时升 CHUNKER_VERSION。
+MAX_CHUNK_SIZE = 600
 
 # 分块口径变了就必须重建索引。vector_store._doc_checksum 会把它算进指纹，
 # 否则源文件没变时 needs_reindex() 返回 False，旧索引会原样留着。
-CHUNKER_VERSION = "clause-v1-20261021"
+CHUNKER_VERSION = "clause-v2-20261028"
 
 _CHAPTER_RE = re.compile(r"^##\s+(.+)")
 _CLAUSE_RE = re.compile(r"^###\s+(.+)")
 _CLAUSE_NO_RE = re.compile(r"^(第[一二三四五六七八九十百千\d]+条)")
 _HORIZONTAL_RULE = "---"
+# 句末标点（零宽 lookbehind，标点归前一句）或换行
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？；!?;])|\n+")
 
 
 @dataclass
@@ -121,11 +128,57 @@ def _parse_clause_no(heading: str) -> str:
     return match.group(1) if match else ""
 
 
-def _split_paragraphs(body: str, limit: int) -> list[str]:
-    """无条款的超长章兜底：只在空行段落边界切，不切段落内部。"""
+def _split_sentences(para: str) -> list[str]:
+    """按句末标点切句（标点归前一句）；没有标点的行按换行切。"""
+    return [s for s in _SENTENCE_SPLIT_RE.split(para) if s and s.strip()]
+
+
+def _split_long_paragraph(para: str, limit: int) -> list[str]:
+    """单段超过 limit 时的兜底：按句末标点攒到接近 limit。
+
+    单句本身超长就不再动——切句内会切出半个词，宁可整句保留。
+    """
+    parts: list[str] = []
+    current = ""
+    for sent in _split_sentences(para):
+        candidate = sent if not current else current + sent
+        if current and len(candidate) > limit:
+            parts.append(current)
+            current = sent
+        else:
+            current = candidate
+    if current:
+        parts.append(current)
+    return parts
+
+
+def _split_paragraphs(body: str, limit: int, warn_label: str = "") -> list[str]:
+    """无条款的超长章兜底：先在空行段落边界切，单段仍超长再按句末标点切。
+
+    两条路径都会告警——超长意味着这份文档本身缺结构，最好由维护者补 ### 小标题，
+    而不是让分块器一直兜底。
+    """
     parts: list[str] = []
     current = ""
     for para in re.split(r"\n\s*\n", body):
+        if not para.strip():
+            continue
+        if len(para) > limit:
+            if current:
+                parts.append(current)
+                current = ""
+            subs = _split_long_paragraph(para, limit)
+            if len(subs) == 1:
+                logger.warning(
+                    f"{warn_label} 单段 {len(para)} 字超过 {limit}，且无可切分的句边界；"
+                    f"整段保留，建议给该章补 ### 小标题"
+                )
+            else:
+                logger.warning(
+                    f"{warn_label} 单段 {len(para)} 字超过 {limit}，已按句末标点拆成 {len(subs)} 块"
+                )
+            parts.extend(subs)
+            continue
         candidate = para if not current else current + "\n\n" + para
         if current and len(candidate) > limit:
             parts.append(current)
@@ -189,7 +242,12 @@ def chunk_document(title: str, file_name: str, content: str, metadata: dict) -> 
                     key_base=f"preamble:{chapter_title or 'root'}",
                 )
             else:
-                parts = _split_paragraphs(chapter["preamble"], MAX_CHUNK_SIZE)
+                # 减去前缀长度，保证加上 ## 章标题后整块仍不超过 MAX_CHUNK_SIZE
+                parts = _split_paragraphs(
+                    chapter["preamble"],
+                    MAX_CHUNK_SIZE - len(prefix),
+                    warn_label=f"{file_name} / {chapter_title or '(无章)'}",
+                )
                 for i, part in enumerate(parts):
                     key = f"chapter:{chapter_title or 'root'}"
                     if len(parts) > 1:
