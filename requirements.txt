@@ -6,6 +6,9 @@ pgvector>=0.3.0
 # 应用自身存储已迁到 PostgreSQL；PyMySQL 保留是因为 MySQLConnector 仍用它
 # 读取「业务库里的 MySQL 表」——那是四类数据源之一，不是遗留物。
 PyMySQL>=1.1.0
+# Skill 定义文件（SKILL.md）的 frontmatter 走 YAML 解析。langchain-community
+# 会传递装上它，但这里显式声明——它已经是被直接 import 的一等依赖。
+PyYAML>=6.0,<7
 pandas>=2.0.0
 numpy>=1.24.0
 openpyxl>=3.1.0

@@ -142,7 +142,7 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 | 设计点 | 做法 | 为什么 |
 |---|---|---|
 | 标签单 token | 标签写成 `数`/`文`/`混` | `tokenizer.encode("data_query")` 是 2 个 token，多 token 标签只能拿到首 token 处的**边缘概率**，且不报错——静默错误 |
-| `max_tokens=1` | 只取第一个位置的分布 | 消掉「生成后面内容反过来影响首 token」的可能 |
+| `max_tokens=1` | 只取第一个位置的分布 | 首 token 的概率在它被采样时就已经定了，后续生成不会反过来影响它；多生成只多花时间和 token，还让解析多背一份「非首 token 结构差异」的风险 |
 | `temperature=1` | 保持模型出厂分布 | 温度作用在 softmax 之前，压低温度会把分布人为压陡、`p_top` 虚高 |
 | `top_logprobs=5` | 写死常量 | 合法区间 `[0, 5]`，越界直接 HTTP 400 |
 | 三个派生量 | `p_top` / `label_mass` / `margin` | 前两个能区分「模型在纠结」和「prompt 没约束住」，这是自评置信度给不了的诊断维度 |
@@ -230,7 +230,8 @@ npm run build     # 构建到 frontend/dist，由后端 serve（SPA fallback）
 │   │   └── feedback.py      # 用户反馈
 │   └── services/
 │       ├── connectors/      # 4 种数据源连接器（策略模式）
-│       ├── skills/          # Skill 注册表（意图 → 能力，按需加载）
+│       ├── skills/          # Skill：能力定义在 SKILL.md，按意图调度
+│       │   └── definitions/ # data_query / doc_query / hybrid 各一份 SKILL.md
 │       ├── aligner.py       # LLM 异构表头对齐
 │       ├── cleaner.py       # 三步清洗 Pipeline
 │       ├── collector.py     # 采集编排

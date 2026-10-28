@@ -239,8 +239,9 @@ npm run build        # 构建到 frontend/dist，由后端 serve（SPA fallback�
 │   │   └── skills/
 │   │       ├── __init__.py
 │   │       ├── base.py            # Skill 抽象（元数据 + handler）
-│   │       ├── registry.py        # Skill 注册表（intent → Skill）
-│   │       ├── instructions.py    # 工具操作手册（按 intent 注入）
+│   │       ├── loader.py          # SKILL.md 扫描 + frontmatter 解析 + 校验
+│   │       ├── registry.py        # 定义 × handler 合成注册表（intent → Skill）
+│   │       ├── definitions/       # 每个能力一个目录，SKILL.md 存元数据 + 操作手册
 │   │       ├── data_query.py      # 结构化数据查询 Skill
 │   │       ├── doc_query.py       # 制度文档问答 Skill（RAG）
 │   │       └── hybrid.py          # 数据 + 文档融合回答 Skill

@@ -22,7 +22,7 @@ from app.services.exec_check import inspect_execution
 from app.services.intent_router import INTENT_CONFIDENCE_THRESHOLD, classify_intent
 from app.services.rag.service import ask_rag
 from app.services.skills.hybrid import _fuse_hybrid_answer
-from app.services.skills.registry import get_skill
+from app.services.skills.registry import all_skills, get_skill
 
 router = APIRouter(prefix="/query", tags=["自然语言查询"])
 
@@ -155,6 +155,33 @@ def _save_trace(
     except Exception as e:
         db.rollback()
         logger.warning(f"trace 写入失败（不影响查询）: {e}")
+
+
+@router.get("/skills", response_model=dict)
+def list_skills():
+    """列出已加载的 Skill 定义。
+
+    元数据全部来自 definitions/<name>/SKILL.md 的 frontmatter——这是 description
+    唯一的消费方，也是排查「某个意图到底绑到了哪份手册」的入口。
+    操作手册正文不出现在响应里。
+    """
+    skills = all_skills()
+    return {
+        "code": 200,
+        "message": "ok",
+        "data": {
+            "total": len(skills),
+            "skills": [
+                {
+                    "name": s.name,
+                    "description": s.description,
+                    "injects_instructions": s.injects_instructions,
+                    "extends": s.extends,
+                }
+                for s in skills
+            ],
+        },
+    }
 
 
 @router.post("", response_model=dict)

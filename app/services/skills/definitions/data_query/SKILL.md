@@ -1,11 +1,9 @@
-"""Skill 操作手册（纯文本常量，无依赖，供 query_agent 按需注入）。
+---
+name: data_query
+description: 查询数据库中的结构化数据（考勤/销售/客户/运营），覆盖明细排查、整体统计与异常归因。当用户问某个人的业绩、某个部门的情况、某项指标异常时使用。不用于查询公司制度、规定、标准等文档类问题。
+---
 
-从原 query_agent.SYSTEM_PROMPT 抽出的「工具使用操作手册」——3 个工具的适用场景、
-决策树、参数提示。这些是「业务决策知识」，不再平铺在 system prompt 里，改为按意图
-（data_query / hybrid）按需注入，避免 prompt 无限膨胀。
-"""
-
-DATA_QUERY_INSTRUCTIONS = """## 可用工具（按场景选择，不要无脑先用 get_summary_stats）
+## 可用工具（按场景选择，不要无脑先用 get_summary_stats）
 
 ### query_cleaned_records — 查明细记录
 查具体人、具体条件的原始数据行。适用场景：
@@ -44,4 +42,4 @@ DATA_QUERY_INSTRUCTIONS = """## 可用工具（按场景选择，不要无脑先
 
 ## 参数提示
 - 问具体人时传 employee_name（如"郑十"、"张三"）
-- 问具体部门时传 department（如"技术部"、"销售部"）"""
+- 问具体部门时传 department（如"技术部"、"销售部"）
