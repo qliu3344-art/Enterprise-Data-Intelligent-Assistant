@@ -23,14 +23,14 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import delete, func, insert, literal, or_, select, text
+from sqlalchemy import delete, func, insert, literal, or_, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.database import Base, SessionLocal, engine
 from app.logger import logger
 from app.models.business_convention import BusinessConvention
 from app.models.doc_chunk import DocChunk, DocIndexState
-from app.services.rag.chunker import chunk_all
+from app.services.rag.chunker import CHUNKER_VERSION, chunk_all
 from app.services.rag.document_loader import load_all_documents, parse_effective_date
 from app.services.rag.embedder import embed_documents
 
@@ -58,7 +58,29 @@ def ensure_schema() -> None:
             BusinessConvention.__table__,
         ],
     )
+    _migrate_chunker_v2()
     _schema_ready = True
+
+
+def _migrate_chunker_v2() -> None:
+    """给已存在的 doc_chunks 补条款级分块所需的列（幂等）。
+
+    create_all 只建新表、不改旧表；线上库已经有章级 chunk，必须显式 ALTER。
+    旧行的 chunk_key 为 NULL，部分唯一索引允许它们共存；下一次 index_all
+    会因为 _doc_checksum 纳入 CHUNKER_VERSION 而整份重建，把它们替换掉。
+    """
+    with engine.begin() as conn:
+        for ddl in (
+            "ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS chunk_key VARCHAR(255)",
+            "ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS doc_id VARCHAR(64)",
+            "ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS version VARCHAR(64)",
+            "ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS clause_no VARCHAR(64)",
+            "ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS parent_key VARCHAR(255)",
+            "ALTER TABLE doc_chunks DROP CONSTRAINT IF EXISTS uq_doc_chunks_file_chunk",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_doc_chunks_file_key "
+            "ON doc_chunks (file_name, chunk_key) WHERE chunk_key IS NOT NULL",
+        ):
+            conn.execute(text(ddl))
 
 
 # ── 相似度标度 ──────────────────────────────────────────────────────
@@ -98,30 +120,42 @@ def _chunk_checksum(content: str) -> str:
 
 
 def _doc_checksum(document) -> str:
-    """整份文档的指纹：正文 + frontmatter 元数据。
+    """整份文档的指纹：正文 + frontmatter 元数据 + 分块器版本。
 
     必须把元数据算进去 —— 生效日期来自 frontmatter，正文没变而 frontmatter
     变了时（制度改版只改生效日期），只哈希正文会判定「没变」，effective_date
     列就永远停在旧值上。
+
+    必须把 CHUNKER_VERSION 算进去 —— 改分块逻辑但源文件没变时，只比正文会
+    判定「没变」，旧索引原样留着，表现是「改了点不生效」。
     """
-    payload = document.content + "\n" + json.dumps(
-        document.metadata, ensure_ascii=False, sort_keys=True
+    payload = (
+        document.content
+        + "\n"
+        + json.dumps(document.metadata, ensure_ascii=False, sort_keys=True)
+        + "\n"
+        + CHUNKER_VERSION
     )
     return hashlib.md5(payload.encode("utf-8")).hexdigest()
 
 
 def _chunk_key(c) -> tuple:
-    """chunk 在文档内的稳定身份。"""
-    return (c.file_name, c.chunk_index)
+    """chunk 在文档内的稳定身份：条款标题，不是序号。"""
+    return (c.file_name, c.chunk_key)
 
 
 def _chunk_metadata(c) -> dict:
-    """chunk 的元数据（对外契约，service.py 依赖这四个键名）。"""
+    """chunk 的元数据（对外契约，service.py 依赖 doc_title/file_name/chapter/section）。"""
     return {
         "doc_title": c.doc_title,
         "file_name": c.file_name,
+        "doc_id": str(c.metadata.get("文档编号", "") or ""),
+        "version": str(c.metadata.get("版本号", "") or ""),
         "chapter": c.chapter or "",
         "section": c.section or "",
+        "clause_no": c.clause_no or "",
+        "chunk_key": c.chunk_key or "",
+        "parent_key": c.parent_key or "",
     }
 
 
@@ -199,11 +233,11 @@ def index_all(force: bool = False) -> dict:
         if changed_names:
             rows = db.execute(
                 select(
-                    DocChunk.file_name, DocChunk.chunk_index,
+                    DocChunk.file_name, DocChunk.chunk_key,
                     DocChunk.content_hash, DocChunk.embedding, DocChunk.created_at,
                 ).where(DocChunk.file_name.in_(changed_names))
             ).all()
-            old_map = {(r.file_name, r.chunk_index): r for r in rows}
+            old_map = {(r.file_name, r.chunk_key): r for r in rows}
 
         need_embed = []
         vectors: dict = {}
@@ -250,10 +284,15 @@ def index_all(force: bool = False) -> dict:
             db.execute(insert(DocChunk), [
                 {
                     "file_name": c.file_name,
+                    "chunk_key": c.chunk_key,
                     "chunk_index": c.chunk_index,
                     "doc_title": c.doc_title,
+                    "doc_id": str(c.metadata.get("文档编号", "") or "")[:64],
+                    "version": str(c.metadata.get("版本号", "") or "")[:64],
                     "chapter": c.chapter or "",
                     "section": c.section or "",
+                    "clause_no": c.clause_no or "",
+                    "parent_key": c.parent_key or "",
                     "content": c.text,
                     "content_hash": new_hash[_chunk_key(c)],
                     "embedding": vectors[_chunk_key(c)],
@@ -317,8 +356,13 @@ def search(query_embedding: List[float], top_k: int = 20) -> list[dict]:
             DocChunk.content,
             DocChunk.doc_title,
             DocChunk.file_name,
+            DocChunk.doc_id,
+            DocChunk.version,
             DocChunk.chapter,
             DocChunk.section,
+            DocChunk.clause_no,
+            DocChunk.chunk_key,
+            DocChunk.parent_key,
             similarity_expr(distance).label("score"),
         )
         .where(_live_filter())
@@ -341,8 +385,13 @@ def search(query_embedding: List[float], top_k: int = 20) -> list[dict]:
             "metadata": {
                 "doc_title": r.doc_title,
                 "file_name": r.file_name,
+                "doc_id": r.doc_id or "",
+                "version": r.version or "",
                 "chapter": r.chapter or "",
                 "section": r.section or "",
+                "clause_no": r.clause_no or "",
+                "chunk_key": r.chunk_key or "",
+                "parent_key": r.parent_key or "",
             },
             "score": round(float(r.score), 4),
         }
@@ -359,7 +408,7 @@ def dump_corpus() -> list[dict]:
 
     与 search() 复用同一个 _live_filter()，两条召回通道指向同一份语料；
     并用 ORDER BY id 保证顺序稳定，且必须带上 id —— 调用方用 id 做反查，
-    不能用文本做键（重叠条款会造出重复文本）。
+    不能用文本做键（同一句话可能在不同块里重复出现）。
     """
     ensure_schema()
     db = SessionLocal()
@@ -367,7 +416,9 @@ def dump_corpus() -> list[dict]:
         rows = db.execute(
             select(
                 DocChunk.id, DocChunk.content, DocChunk.doc_title,
-                DocChunk.file_name, DocChunk.chapter, DocChunk.section,
+                DocChunk.file_name, DocChunk.doc_id, DocChunk.version,
+                DocChunk.chapter, DocChunk.section, DocChunk.clause_no,
+                DocChunk.chunk_key, DocChunk.parent_key,
             )
             .where(_live_filter())
             .order_by(DocChunk.id)
@@ -382,12 +433,71 @@ def dump_corpus() -> list[dict]:
             "metadata": {
                 "doc_title": r.doc_title,
                 "file_name": r.file_name,
+                "doc_id": r.doc_id or "",
+                "version": r.version or "",
                 "chapter": r.chapter or "",
                 "section": r.section or "",
+                "clause_no": r.clause_no or "",
+                "chunk_key": r.chunk_key or "",
+                "parent_key": r.parent_key or "",
             },
         }
         for r in rows
     ]
+
+
+def fetch_parent_chunks(refs: set[tuple[str, str]]) -> dict[tuple[str, str], list[dict]]:
+    """按 (file_name, parent_key) 取回整章的所有 chunk，供父子块回填。
+
+    父块不单独建向量、不参与检索：检索仍然打在条款上，命中后再按 parent_key
+    取回同章条款，只用于组装生成侧上下文。回填走同一个 _live_filter()，
+    过期的章不会被拉回来。
+
+    Returns:
+        {(file_name, parent_key): [{"text", "metadata", "chunk_index"}, ...]}
+        每组按 chunk_index 升序。
+    """
+    refs = {(f, p) for f, p in refs if p}
+    if not refs:
+        return {}
+
+    ensure_schema()
+    db = SessionLocal()
+    try:
+        rows = db.execute(
+            select(
+                DocChunk.id, DocChunk.content, DocChunk.doc_title,
+                DocChunk.file_name, DocChunk.doc_id, DocChunk.version,
+                DocChunk.chapter, DocChunk.section, DocChunk.clause_no,
+                DocChunk.chunk_key, DocChunk.parent_key, DocChunk.chunk_index,
+            )
+            .where(
+                tuple_(DocChunk.file_name, DocChunk.parent_key).in_(sorted(refs)),
+                _live_filter(),
+            )
+            .order_by(DocChunk.file_name, DocChunk.chunk_index)
+        ).all()
+    finally:
+        SessionLocal.remove()
+
+    grouped: dict[tuple[str, str], list[dict]] = {}
+    for r in rows:
+        grouped.setdefault((r.file_name, r.parent_key), []).append({
+            "text": r.content,
+            "chunk_index": r.chunk_index,
+            "metadata": {
+                "doc_title": r.doc_title,
+                "file_name": r.file_name,
+                "doc_id": r.doc_id or "",
+                "version": r.version or "",
+                "chapter": r.chapter or "",
+                "section": r.section or "",
+                "clause_no": r.clause_no or "",
+                "chunk_key": r.chunk_key or "",
+                "parent_key": r.parent_key or "",
+            },
+        })
+    return grouped
 
 
 def get_document_stats() -> list[dict]:

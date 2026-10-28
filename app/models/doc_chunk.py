@@ -38,13 +38,25 @@ class DocChunk(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="代理主键")
 
-    # 文档内的稳定身份：增量重建按 (file_name, chunk_index) 对齐
+    # 文档内的稳定身份：增量重建按 (file_name, chunk_key) 对齐。
+    # chunk_index 只用于展示/排序，不能当身份——插一条条款就会把它后面的全部顶掉。
     file_name = Column(String(255), nullable=False, comment="源文件名（含扩展名）")
-    chunk_index = Column(Integer, nullable=False, comment="文档内 chunk 序号，从 0 起")
+    chunk_key = Column(
+        String(255),
+        nullable=False,
+        comment="文档内稳定身份：clause:第X条 / preamble:第X章 / chapter:第X章",
+    )
+    chunk_index = Column(Integer, nullable=False, comment="文档内 chunk 序号，仅用于展示/排序")
 
     doc_title = Column(String(255), nullable=False, comment="文档标题")
+    doc_id = Column(String(64), default="", comment="文档编号（frontmatter 的「文档编号」）")
+    version = Column(String(64), default="", comment="版本号（frontmatter 的「版本号」）")
     chapter = Column(String(255), default="", comment="所属章（## 二级标题）")
-    section = Column(String(255), default="", comment="所属节（### 三级标题）")
+    section = Column(String(255), default="", comment="所属条（### 三级标题）")
+    clause_no = Column(String(64), default="", comment="条款编号，如「第六条」")
+    parent_key = Column(
+        String(255), default="", comment="父块（章）的稳定 key，父子块回填用"
+    )
 
     content = Column(Text, nullable=False, comment="chunk 原文")
     content_hash = Column(
@@ -70,7 +82,7 @@ class DocChunk(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("file_name", "chunk_index", name="uq_doc_chunks_file_chunk"),
+        UniqueConstraint("file_name", "chunk_key", name="uq_doc_chunks_file_key"),
         Index("idx_doc_chunks_doc_title", "doc_title"),
         Index("idx_doc_chunks_effective_date", "effective_date"),
         # 故意不建向量索引。1500 条 × 512 维顺序扫描是亚毫秒级，而近似索引

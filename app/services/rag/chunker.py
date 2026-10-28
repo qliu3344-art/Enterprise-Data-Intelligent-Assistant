@@ -1,10 +1,14 @@
-"""Markdown 感知文本分块器。
+"""Markdown 感知文本分块器 —— 条款级。
 
 策略：
-  1. 按 ## 二级标题切分（对应制度的"章"）
-  2. 每 chunk 最大 800 字符，超过则按 ### 三级标题继续切
-  3. 相邻 chunk 之间保留最后 1 条款作为重叠（~100 字）
-  4. 每个 chunk 携带完整的章节层级信息
+  1. 按 ## 二级标题切章，chunk 不跨章。
+  2. 章内以 ### 三级标题（条款）为最小单位，一条一块。
+  3. 每块正文开头带 ## 章标题和 ### 条标题，章标题同时进 metadata。
+  4. 无 ### 的章整章一块；超长时按空行段落兜底切分。
+  5. 条款本身不拆；单条超过 MAX_CHUNK_SIZE 只告警，留给后续按款/项二级拆分。
+
+为什么是条款级：制度在业务里的引用单位是「第 X 条」，员工和审计都按条引用；
+章只负责上下文。章级块会把 5~7 条不同主题平均进一个向量，问某一条时精度被稀释。
 """
 
 import re
@@ -13,16 +17,17 @@ from typing import List
 
 from app.logger import logger
 
-MAX_CHUNK_SIZE = 800  # 每块最大字符数
-OVERLAP_CLAUSES = 1    # 相邻块重叠条款数
+# 单条条款超过这个长度只告警，不在这里拆；拆条会切出半句话。
+MAX_CHUNK_SIZE = 800
 
-# 条款编号正则：数字编号（1. / 1）、中文序号（第一条 / 一、/（一））和 ### 标题
-_CLAUSE_PATTERN = re.compile(
-    r"^(\d+[\.\、\)]?\s)"               # 1. / 1) / 1、
-    r"|^(第[一二三四五六七八九十百千\d]+[条款章节])"  # 第一条 / 第二章 / 第3条
-    r"|^([（\(]?[一二三四五六七八九十]+[）\)]?\s)"  # （一）/ 一、
-    r"|^(###\s)"                          # ### 三级标题
-)
+# 分块口径变了就必须重建索引。vector_store._doc_checksum 会把它算进指纹，
+# 否则源文件没变时 needs_reindex() 返回 False，旧索引会原样留着。
+CHUNKER_VERSION = "clause-v1-20261021"
+
+_CHAPTER_RE = re.compile(r"^##\s+(.+)")
+_CLAUSE_RE = re.compile(r"^###\s+(.+)")
+_CLAUSE_NO_RE = re.compile(r"^(第[一二三四五六七八九十百千\d]+条)")
+_HORIZONTAL_RULE = "---"
 
 
 @dataclass
@@ -32,175 +37,198 @@ class Chunk:
     doc_title: str
     file_name: str
     chapter: str = ""        # 所属章（## 标题）
-    section: str = ""        # 所属节/条（### 标题）
-    chunk_index: int = 0     # 在文档内的序号
+    section: str = ""        # 所属条（### 标题）；章前言为「」
+    chunk_index: int = 0     # 在文档内的序号（只用于展示/排序）
     metadata: dict = field(default_factory=dict)
+    chunk_key: str = ""      # 文档内稳定身份，增量重建按它对齐
+    clause_no: str = ""      # 条款编号，如「第六条」
+    parent_key: str = ""     # 父块（章）的稳定 key，后续父子块回填用
+
+
+def _clean_body(raw: str) -> str:
+    """清理条款/章正文：去掉首尾空行和章间分隔线，压缩连续空行。"""
+    lines = [line.rstrip() for line in raw.split("\n")]
+    while lines and (not lines[0].strip() or lines[0].strip() == _HORIZONTAL_RULE):
+        lines.pop(0)
+    while lines and (not lines[-1].strip() or lines[-1].strip() == _HORIZONTAL_RULE):
+        lines.pop()
+    text = "\n".join(lines)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def _split_by_headings(text: str) -> list[dict]:
-    """将文档按标题拆分为层级结构。
+    """将文档按标题拆成「章 → 条」两级结构。
 
-    返回 [{"level": 2, "heading": "第一章 总则", "body": "...", "subsections": [...]}]
+    Returns:
+        [{"heading": "第二章 …", "preamble": "章首正文", "clauses": [
+            {"heading": "第六条 …", "body": "条款正文"}, ...]}]
     """
-    lines = text.split("\n")
-    sections: list[dict] = []
-    current_section: dict | None = None
-    current_body: list[str] = []
+    chapters: list[dict] = []
+    chapter: dict | None = None
+    clause: dict | None = None
+    buf: list[str] = []
 
-    for line in lines:
-        h2_match = re.match(r"^##\s+(.+)", line)
-        h3_match = re.match(r"^###\s+(.+)", line)
+    def flush_clause() -> None:
+        nonlocal clause, buf
+        if clause is not None:
+            clause["body"] = _clean_body("\n".join(buf))
+            chapter["clauses"].append(clause)
+            clause = None
+        buf = []
+
+    def flush_chapter() -> None:
+        nonlocal chapter
+        if chapter is None:
+            return
+        if clause is not None:
+            flush_clause()
+        else:
+            chapter["preamble"] = _clean_body("\n".join(buf))
+        chapters.append(chapter)
+        chapter = None
+
+    for line in text.split("\n"):
+        h2_match = _CHAPTER_RE.match(line)
+        h3_match = _CLAUSE_RE.match(line)
 
         if h2_match:
-            if current_section is not None:
-                remaining = "\n".join(current_body).strip()
-                current_section["body"] = remaining
-                # 换章时，累积的这几行属于**本章最后一个 ### 小节**，必须交还给它。
-                # 只写进 chapter 级 body 等于把它丢进黑洞：chunk_document 对有 subsections
-                # 的章只读 subsections、根本不看 chapter body——于是每章最后一条
-                # （第六条迟到、第九条、第十六条…）的正文全部静默消失，条款还在、
-                # 内容没了，检索永远命中不到。文件末尾收尾那段做的是同一件事。
-                if remaining and current_section["subsections"]:
-                    last_sub = current_section["subsections"][-1]
-                    last_sub["body"] = (last_sub["body"] + "\n" + remaining).strip()
-            current_section = {
-                "level": 2,
+            flush_chapter()
+            chapter = {
                 "heading": h2_match.group(1).strip(),
-                "body": "",
-                "subsections": [],
+                "preamble": "",
+                "clauses": [],
             }
-            sections.append(current_section)
-            current_body = []
-        elif h3_match and current_section is not None:
-            # 将当前累积的 body 保存为上一节的结束，再开新小节
-            if current_body:
-                current_section["subsections"].append({
-                    "level": 3,
-                    "heading": "",
-                    "body": "\n".join(current_body).strip(),
-                })
-                current_body = []
-            current_section["subsections"].append({
-                "level": 3,
-                "heading": h3_match.group(1).strip(),
-                "body": "",
-            })
+        elif h3_match:
+            if chapter is None:
+                # 兜底：文档没有 ##，只有 ###；当成一个无标题章。
+                chapter = {"heading": "", "preamble": "", "clauses": []}
+            elif clause is None and buf:
+                # 章首、第一条之前的内容属于本章，不属于第一条。
+                chapter["preamble"] = _clean_body("\n".join(buf))
+                buf = []
+            flush_clause()
+            clause = {"heading": h3_match.group(1).strip(), "body": ""}
         else:
-            current_body.append(line)
+            buf.append(line)
 
-    # 保存最后一个 section
-    if current_section is not None:
-        if current_body:
-            remaining = "\n".join(current_body).strip()
-            if current_section["subsections"]:
-                # 追加到最后一个 subsection
-                last_sub = current_section["subsections"][-1]
-                last_sub["body"] = (last_sub["body"] + "\n" + remaining).strip()
-            else:
-                current_section["body"] = remaining
+    flush_chapter()
+    return [c for c in chapters if c["heading"] or c["preamble"] or c["clauses"]]
+
+
+def _parse_clause_no(heading: str) -> str:
+    """从条标题里取编号：「第六条 迟到与早退」→「第六条」。"""
+    match = _CLAUSE_NO_RE.match(heading)
+    return match.group(1) if match else ""
+
+
+def _split_paragraphs(body: str, limit: int) -> list[str]:
+    """无条款的超长章兜底：只在空行段落边界切，不切段落内部。"""
+    parts: list[str] = []
+    current = ""
+    for para in re.split(r"\n\s*\n", body):
+        candidate = para if not current else current + "\n\n" + para
+        if current and len(candidate) > limit:
+            parts.append(current)
+            current = para
         else:
-            current_section["body"] = ""
-
-    return sections
+            current = candidate
+    if current:
+        parts.append(current)
+    return parts
 
 
 def chunk_document(title: str, file_name: str, content: str, metadata: dict) -> List[Chunk]:
-    """将一份完整文档拆分为多个 Chunk。"""
-    sections = _split_by_headings(content)
+    """将一份完整文档拆成条款级 chunks。"""
+    chapters = _split_by_headings(content)
     chunks: List[Chunk] = []
-    chunk_idx = 0
+    used_keys: set[str] = set()
 
-    for sec in sections:
-        chapter_title = sec["heading"]
+    def add_chunk(
+        text: str,
+        chapter_title: str,
+        section: str,
+        clause_no: str,
+        parent_key: str,
+        key_base: str,
+    ) -> None:
+        # 同一份文档里 key 必须唯一；标题重复时加 #2、#3 后缀。
+        key = key_base
+        suffix = 2
+        while key in used_keys:
+            key = f"{key_base}#{suffix}"
+            suffix += 1
+        used_keys.add(key)
 
-        if sec["subsections"]:
-            # 有三级标题：按小节切分
-            sub_chunks: list[str] = []
-            current_text = f"## {chapter_title}\n\n"
+        chunks.append(Chunk(
+            text=text,
+            doc_title=title,
+            file_name=file_name,
+            chapter=chapter_title,
+            section=section,
+            chunk_index=len(chunks),
+            metadata=metadata,
+            chunk_key=key,
+            clause_no=clause_no,
+            parent_key=parent_key,
+        ))
 
-            for sub in sec["subsections"]:
-                heading_line = f"### {sub['heading']}\n" if sub["heading"] else ""
-                candidate = heading_line + sub["body"]
+    for chapter in chapters:
+        chapter_title = chapter["heading"]
+        parent_key = f"chapter:{chapter_title}" if chapter_title else "chapter:root"
+        prefix = f"## {chapter_title}\n\n" if chapter_title else ""
 
-                if len(current_text) + len(candidate) > MAX_CHUNK_SIZE and current_text.strip():
-                    sub_chunks.append(current_text.strip())
-                    current_text = f"## {chapter_title}\n\n{candidate}"
-                else:
-                    current_text += "\n\n" + candidate
-
-            if current_text.strip():
-                sub_chunks.append(current_text.strip())
-
-            # 生成 chunks，相邻之间携带重叠条款
-            for i, text in enumerate(sub_chunks):
-                if i > 0 and OVERLAP_CLAUSES > 0:
-                    # 从前一个 chunk 尾部取最后几条条款作为重叠
-                    prev_lines = sub_chunks[i - 1].split("\n")
-                    overlap_lines = []
-                    count = 0
-                    for line in reversed(prev_lines):
-                        if _CLAUSE_PATTERN.match(line.strip()):
-                            overlap_lines.insert(0, line)
-                            count += 1
-                            if count >= OVERLAP_CLAUSES:
-                                break
-                    if overlap_lines:
-                        text = "\n".join(overlap_lines) + "\n\n" + text
-
-                chunks.append(Chunk(
-                    text=text,
-                    doc_title=title,
-                    file_name=file_name,
-                    chapter=chapter_title,
-                    section=sub.get("heading", ""),
-                    chunk_index=chunk_idx,
-                    metadata=metadata,
-                ))
-                chunk_idx += 1
-        else:
-            # 无三级标题：整章作为一个 chunk
-            text = f"## {chapter_title}\n\n{sec['body']}"
-            if len(text) > MAX_CHUNK_SIZE * 2:
-                # 超长章节：按段落切分
-                paragraphs = sec["body"].split("\n\n")
-                current = f"## {chapter_title}\n\n"
-                for para in paragraphs:
-                    if len(current) + len(para) > MAX_CHUNK_SIZE:
-                        chunks.append(Chunk(
-                            text=current.strip(),
-                            doc_title=title,
-                            file_name=file_name,
-                            chapter=chapter_title,
-                            section="",
-                            chunk_index=chunk_idx,
-                            metadata=metadata,
-                        ))
-                        chunk_idx += 1
-                        current = f"## {chapter_title}（续）\n\n{para}"
-                    else:
-                        current += "\n\n" + para
-                if current.strip():
-                    chunks.append(Chunk(
-                        text=current.strip(),
-                        doc_title=title,
-                        file_name=file_name,
-                        chapter=chapter_title,
-                        section="",
-                        chunk_index=chunk_idx,
-                        metadata=metadata,
-                    ))
-                    chunk_idx += 1
-            else:
-                chunks.append(Chunk(
-                    text=text,
-                    doc_title=title,
-                    file_name=file_name,
-                    chapter=chapter_title,
+        # 章首正文：有条款时它是前言块；没有条款时它整章就是一块。
+        if chapter["preamble"]:
+            if chapter["clauses"]:
+                add_chunk(
+                    text=prefix + chapter["preamble"],
+                    chapter_title=chapter_title,
                     section="",
-                    chunk_index=chunk_idx,
-                    metadata=metadata,
-                ))
-                chunk_idx += 1
+                    clause_no="",
+                    parent_key=parent_key,
+                    key_base=f"preamble:{chapter_title or 'root'}",
+                )
+            else:
+                parts = _split_paragraphs(chapter["preamble"], MAX_CHUNK_SIZE)
+                for i, part in enumerate(parts):
+                    key = f"chapter:{chapter_title or 'root'}"
+                    if len(parts) > 1:
+                        key += f"#p{i}"
+                    add_chunk(
+                        text=prefix + part,
+                        chapter_title=chapter_title,
+                        section="",
+                        clause_no="",
+                        parent_key=parent_key,
+                        key_base=key,
+                    )
+
+        for clause in chapter["clauses"]:
+            heading = clause["heading"]
+            body = clause["body"]
+            if heading:
+                text = f"{prefix}### {heading}\n\n{body}".rstrip()
+                section = heading
+                key_base = f"clause:{heading}"
+            else:
+                text = f"{prefix}{body}".rstrip()
+                section = ""
+                key_base = f"clause:{chapter_title or 'root'}#{len(chunks) + 1}"
+
+            if len(text) > MAX_CHUNK_SIZE:
+                logger.warning(
+                    f"{file_name} / {heading or chapter_title} 长度 {len(text)} "
+                    f"超过 {MAX_CHUNK_SIZE}；条款级分块不拆条，留给后续按款/项拆"
+                )
+
+            add_chunk(
+                text=text,
+                chapter_title=chapter_title,
+                section=section,
+                clause_no=_parse_clause_no(heading),
+                parent_key=parent_key,
+                key_base=key_base,
+            )
 
     return chunks
 
@@ -217,6 +245,5 @@ def chunk_all(documents: list) -> List[Chunk]:
         )
         all_chunks.extend(doc_chunks)
         logger.info(f"  {doc.title}: {len(doc_chunks)} chunks")
-
     logger.info(f"总计 {len(all_chunks)} 个 chunks")
     return all_chunks
