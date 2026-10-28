@@ -142,16 +142,21 @@ def _persist_conventions(question: str, answer: str, session_id: str) -> None:
 
 
 def _load_skill_instructions(intent: str) -> str:
-    """按 intent 加载对应 skill 的操作手册（惰性 import，避免循环依赖）。
+    """按 intent 从 Skill 注册表取操作手册（惰性 import，避免循环依赖）。
 
-    data_query / hybrid 都需要数据查询的操作手册；doc_query 走 RAG 不经 Agent，
-    返回空串（不注入）。
+    registry 在模块顶层 import handlers，handlers 又在函数体内 import 本模块，
+    所以这里只能在函数内延迟 import registry，否则导入阶段成环。
+
+    data_query / hybrid 注入同一份数据查询手册（hybrid 的 SKILL.md 声明 extends）；
+    doc_query 走 RAG、不经 Agent，injects_instructions=false，返回空串不注入。
     """
-    if intent not in ("data_query", "hybrid"):
-        return ""
-    from app.services.skills.instructions import DATA_QUERY_INSTRUCTIONS
+    from app.services.skills.registry import get_skill
 
-    return DATA_QUERY_INSTRUCTIONS
+    skill = get_skill(intent)
+    # 未知 intent 会回退到 data_query，但回退只用于调度，不该顺带把手册也带进来
+    if skill.name != intent or not skill.injects_instructions:
+        return ""
+    return skill.instructions
 
 
 # —— 缓存 Agent 实例 ——

@@ -81,6 +81,13 @@ async def on_startup():
     lengths = verify_single_token_labels()
     logger.info(f"意图标签单 token 校验通过: {lengths}")
 
+    # Skill 定义加载：SKILL.md 是操作手册的唯一来源。
+    # 缺文件、格式错、handler 没绑定都属于配置错误，和上面那条同属 fail-fast 组，
+    # 所以放在可降级的 RAG 索引之前——正确性检查先跑完，再跑可选增强。
+    from app.services.skills.registry import load_skills
+
+    load_skills()
+
     # 自动初始化 RAG 索引（per-document 增量，只重算变化的文档）
     try:
         from app.services.rag.vector_store import index_all
