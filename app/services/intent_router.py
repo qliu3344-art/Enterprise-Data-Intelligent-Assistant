@@ -375,8 +375,9 @@ def classify_intent(question: str) -> dict:
 def _call_llm_with_logprobs(question: str) -> dict:
     """调用 DashScope，取回第一个 token 的分布。
 
-    只用生成位置 0：max_tokens=1 已经把输出压到最短，同时消掉「生成后面内容反过来
-    影响首 token」的可能。
+    只用生成位置 0：max_tokens=1 已经把输出压到最短。首 token 的概率在它被采样时
+    就已经定了，后面的生成不会反过来影响它；多生成只会多花时间和 token，还会让解析
+    多背一份「非首 token 结构差异」的风险。
     """
     prompt = INTENT_PROMPT.format(question=question)
     resp = retry_call(
