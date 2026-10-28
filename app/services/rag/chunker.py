@@ -4,7 +4,8 @@
   1. 按 ## 二级标题切章，chunk 不跨章。
   2. 章内以 ### 三级标题（条款）为最小单位，一条一块。
   3. 每块正文开头带 ## 章标题和 ### 条标题，章标题同时进 metadata。
-  4. 无 ### 的章整章一块；超长时按空行段落兜底切分，单段仍超长再按句末标点切。
+  4. 无 ### 的章整章一块；超长时按空行段落兜底切分，单段仍超长再按句末标点切
+     （表格行整体不拆——表格是原子单位，切开就丢表头）。
   5. 条款本身不拆；单条超过 MAX_CHUNK_SIZE 只告警，留给后续按款/项二级拆分。
 
 为什么是条款级：制度在业务里的引用单位是「第 X 条」，员工和审计都按条引用；
@@ -33,8 +34,8 @@ _CHAPTER_RE = re.compile(r"^##\s+(.+)")
 _CLAUSE_RE = re.compile(r"^###\s+(.+)")
 _CLAUSE_NO_RE = re.compile(r"^(第[一二三四五六七八九十百千\d]+条)")
 _HORIZONTAL_RULE = "---"
-# 句末标点（零宽 lookbehind，标点归前一句）或换行
-_SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？；!?;])|\n+")
+# 句末标点（零宽 lookbehind，标点归前一句）；换行另行处理，否则表格行会被拆散
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？；!?;])")
 
 
 @dataclass
@@ -129,8 +130,32 @@ def _parse_clause_no(heading: str) -> str:
 
 
 def _split_sentences(para: str) -> list[str]:
-    """按句末标点切句（标点归前一句）；没有标点的行按换行切。"""
-    return [s for s in _SENTENCE_SPLIT_RE.split(para) if s and s.strip()]
+    """切句单位：句末标点归前一句，换行作为分隔保留。
+
+    连续的表格行整体作为一个单位，绝不拆开——Markdown 表格靠单换行分行，
+    按行切开第二块就没有表头了。表格是原子块，这一点和文档层那条规则一致。
+    """
+    lines = para.split("\n")
+    units: list[str] = []
+    table: list[str] = []
+
+    def flush_table() -> None:
+        if table:
+            units.append("\n".join(table))
+            table.clear()
+
+    for idx, line in enumerate(lines):
+        if line.strip().startswith("|"):
+            table.append(line)
+            continue
+        flush_table()
+        pieces = [p for p in _SENTENCE_SPLIT_RE.split(line) if p and p.strip()]
+        # 除最后一行外，句尾补回换行，拼起来不会把两行黏成一句
+        if pieces and idx < len(lines) - 1:
+            pieces[-1] += "\n"
+        units.extend(pieces)
+    flush_table()
+    return units
 
 
 def _split_long_paragraph(para: str, limit: int) -> list[str]:
@@ -168,10 +193,12 @@ def _split_paragraphs(body: str, limit: int, warn_label: str = "") -> list[str]:
                 parts.append(current)
                 current = ""
             subs = _split_long_paragraph(para, limit)
-            if len(subs) == 1:
+            oversized = [s for s in subs if len(s) > limit]
+            if oversized:
                 logger.warning(
-                    f"{warn_label} 单段 {len(para)} 字超过 {limit}，且无可切分的句边界；"
-                    f"整段保留，建议给该章补 ### 小标题"
+                    f"{warn_label} 单段 {len(para)} 字超过 {limit}，其中 {len(oversized)} 个"
+                    f"原子块（超长单句或表格）无法再切，整块保留；"
+                    f"建议给该章补 ### 小标题"
                 )
             else:
                 logger.warning(
