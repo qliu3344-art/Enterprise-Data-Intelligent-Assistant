@@ -16,11 +16,12 @@ class Settings:
     VERSION: str = "1.0.0"
 
     # PostgreSQL —— 业务数据与向量同库（向量走 pgvector 扩展，不另起一套存储）
-    PG_HOST: str = "localhost"
-    PG_PORT: int = 5432
-    PG_USER: str = "postgres"
+    # 全部走环境变量：本机默认值不变，容器里由 compose 指向 db 服务
+    PG_HOST: str = os.getenv("PG_HOST", "localhost")
+    PG_PORT: int = int(os.getenv("PG_PORT", "5432"))
+    PG_USER: str = os.getenv("PG_USER", "postgres")
     PG_PASSWORD: str = os.getenv("PG_PASSWORD", "")
-    PG_DB: str = "data_processing_platform"
+    PG_DB: str = os.getenv("PG_DB", "data_processing_platform")
     # LangGraph 会话检查点单独一个库：它是每轮都写的高频小事务，业务查询是慢查询，
     # 放同一个库里会互相拖累。
     CHECKPOINT_DB: str = "agent_checkpoints"
