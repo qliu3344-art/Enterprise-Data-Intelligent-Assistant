@@ -1,0 +1,28 @@
+# 构建上下文只需要源码：把依赖、产物、日志、密钥都挡在外面
+**/__pycache__
+**/*.pyc
+.git
+.venv
+venv
+
+# 前端依赖和产物都在镜像里现做
+frontend/node_modules
+frontend/dist
+
+# 运行期才需要的东西
+data
+logs
+*.log
+
+# 密钥不进镜像，运行时由 compose 的 env_file 注入
+.env
+
+# 评测产物、临时脚本不参与构建
+tests
+eval_report_*.json
+eval_report_*.json.bak-*
+*.bak-*
+_*.py
+_*.json
+_*.log
+Untitled

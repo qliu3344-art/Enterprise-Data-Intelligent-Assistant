@@ -1,0 +1,65 @@
+name: data-agent
+
+# 应用和初始化容器共用同一组数据库连接参数。
+# PG_HOST 必须走服务名 db —— 容器里的 localhost 是它自己，不是数据库。
+x-db-env: &db-env
+  PG_HOST: db
+  PG_PORT: "5432"
+  PG_USER: ${PG_USER:-postgres}
+  PG_DB: ${PG_DB:-data_processing_platform}
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?请在 .env 里配置 PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB:-data_processing_platform}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      # 应用启动时会连检查点库，库没建好就起不来，所以这里必须等真的能连
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-postgres} -d ${PG_DB:-data_processing_platform}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # 一次性容器：建表 + 补列，跑完就退出。
+  # 不在应用启动时建表，是因为多副本同时启动会并发执行 DDL。
+  init:
+    build: .
+    image: data-agent:1.0
+    command: ["python", "scripts/init_db.py"]
+    env_file: .env
+    environment: *db-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build: .
+    image: data-agent:1.0
+    env_file: .env
+    environment:
+      <<: *db-env
+      # 国内直连 huggingface.co 会停在 etag 查询上超时，
+      # 而 tokenizer 那个调用在 try 之外，异常会直接穿出去
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # 模型缓存放命名卷：不随镜像重建丢失，也不污染代码目录
+      - hf_cache:/home/appuser/.cache/huggingface
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  hf_cache:
